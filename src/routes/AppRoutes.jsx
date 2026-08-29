@@ -12,6 +12,8 @@ import Watchlist from "../pages/Watchlist";
 import History from "../pages/History";
 import Profile from "../pages/Profile";
 import NotFound from "../pages/NotFound";
+
+// Admin
 import AdminGuard from "../components/AdminGuard";
 import AdminLogin from "../pages/admin/AdminLogin";
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -19,31 +21,93 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="/anime/:id" element={<AnimeDetails />} />
-      <Route path="/watch/:animeId/:episode" element={<Watch />} />
+      {/* =========================
+          PUBLIC ROUTES
+      ========================== */}
 
-      <Route path="/trending" element={<Trending />} />
-      <Route path="/popular" element={<Popular />} />
-      <Route path="/seasonal" element={<Seasonal />} />
-      <Route path="/genre/:genre" element={<Genre />} />
+      <Route
+        path="/"
+        element={<Home />}
+      />
 
-      <Route path="/watchlist" element={<Watchlist />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/profile" element={<<Route
-  path="/admin/login"
-  element={<AdminLogin />}
-/>
+      <Route
+        path="/search"
+        element={<Search />}
+      />
 
-<Route element={<AdminGuard />}>
-  <Route
-    path="/admin"
-    element={<AdminDashboard />}
-  />
-</Route>
+      <Route
+        path="/anime/:id"
+        element={<AnimeDetails />}
+      />
 
-      <Route path="*" element={<NotFound />} />
+      <Route
+        path="/watch/:animeId/:episode"
+        element={<Watch />}
+      />
+
+      <Route
+        path="/trending"
+        element={<Trending />}
+      />
+
+      <Route
+        path="/popular"
+        element={<Popular />}
+      />
+
+      <Route
+        path="/seasonal"
+        element={<Seasonal />}
+      />
+
+      <Route
+        path="/genre/:genre"
+        element={<Genre />}
+      />
+
+      <Route
+        path="/watchlist"
+        element={<Watchlist />}
+      />
+
+      <Route
+        path="/history"
+        element={<History />}
+      />
+
+      <Route
+        path="/profile"
+        element={<Profile />}
+      />
+
+      {/* =========================
+          ADMIN LOGIN
+      ========================== */}
+
+      <Route
+        path="/admin/login"
+        element={<AdminLogin />}
+      />
+
+      {/* =========================
+          PROTECTED ADMIN ROUTES
+      ========================== */}
+
+      <Route element={<AdminGuard />}>
+        <Route
+          path="/admin"
+          element={<AdminDashboard />}
+        />
+      </Route>
+
+      {/* =========================
+          404
+      ========================== */}
+
+      <Route
+        path="*"
+        element={<NotFound />}
+      />
     </Routes>
   );
 }
