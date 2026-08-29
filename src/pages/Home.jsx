@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import Navbar from "../components/Navbar";
 import MobileNav from "../components/MobileNav";
 import Hero from "../components/Hero";
@@ -6,7 +7,6 @@ import AnimeRow from "../components/AnimeRow";
 import SectionHeader from "../components/SectionHeader";
 import Footer from "../components/Footer";
 import Loading from "../components/Loading";
-import ErrorState from "../components/ErrorState";
 
 import {
   getTrendingAnime,
@@ -20,42 +20,63 @@ export default function Home() {
   const [seasonal, setSeasonal] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [apiErrors, setApiErrors] = useState([]);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadHome() {
-      try {
-        setLoading(true);
-        setError("");
+      setLoading(true);
+      setApiErrors([]);
 
-        const [trendingData, popularData, seasonalData] =
-          await Promise.all([
-            getTrendingAnime(),
-            getPopularAnime(),
-            getSeasonalAnime()
-          ]);
+      const results = await Promise.allSettled([
+        getTrendingAnime(),
+        getPopularAnime(),
+        getSeasonalAnime()
+      ]);
 
-        if (!mounted) return;
+      if (!mounted) return;
 
-        setTrending(trendingData.items || []);
-        setPopular(popularData.items || []);
-        setSeasonal(seasonalData.items || []);
-      } catch (err) {
-        console.error("Home loading error:", err);
+      const errors = [];
 
-        if (mounted) {
-          setError(
-            err?.message ||
-              "Failed to load anime. Please try again."
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      if (results[0].status === "fulfilled") {
+        setTrending(results[0].value?.items || []);
+      } else {
+        console.error(
+          "Trending API error:",
+          results[0].reason
+        );
+
+        errors.push("Trending");
+        setTrending([]);
       }
+
+      if (results[1].status === "fulfilled") {
+        setPopular(results[1].value?.items || []);
+      } else {
+        console.error(
+          "Popular API error:",
+          results[1].reason
+        );
+
+        errors.push("Popular");
+        setPopular([]);
+      }
+
+      if (results[2].status === "fulfilled") {
+        setSeasonal(results[2].value?.items || []);
+      } else {
+        console.error(
+          "Seasonal API error:",
+          results[2].reason
+        );
+
+        errors.push("Seasonal");
+        setSeasonal([]);
+      }
+
+      setApiErrors(errors);
+      setLoading(false);
     }
 
     loadHome();
@@ -69,57 +90,76 @@ export default function Home() {
     return <Loading text="Loading AnimeVerse..." />;
   }
 
+  const heroAnime =
+    trending[0] ||
+    popular[0] ||
+    seasonal[0];
+
   return (
     <div className="app">
       <Navbar />
 
-      {error ? (
-        <main className="page">
-          <ErrorState message={error} />
-        </main>
-      ) : (
-        <main>
-          {trending.length > 0 && (
-            <Hero anime={trending[0]} />
-          )}
+      <main>
+        {heroAnime && (
+          <Hero anime={heroAnime} />
+        )}
 
-          {trending.length > 0 && (
-            <section className="content-section">
-              <SectionHeader
-                title="Trending Now"
-                subtitle="What everyone is watching"
-                link="/trending"
-              />
+        {apiErrors.length > 0 && (
+          <div className="api-warning">
+            Some anime data is temporarily unavailable.
+            Please try again later.
+          </div>
+        )}
 
-              <AnimeRow anime={trending} />
-            </section>
-          )}
+        {trending.length > 0 && (
+          <section className="content-section">
+            <SectionHeader
+              title="Trending Now"
+              subtitle="What everyone is watching"
+              link="/trending"
+            />
 
-          {popular.length > 0 && (
-            <section className="content-section">
-              <SectionHeader
-                title="Popular Anime"
-                subtitle="Fan favorites"
-                link="/popular"
-              />
+            <AnimeRow anime={trending} />
+          </section>
+        )}
 
-              <AnimeRow anime={popular} />
-            </section>
-          )}
+        {popular.length > 0 && (
+          <section className="content-section">
+            <SectionHeader
+              title="Popular Anime"
+              subtitle="Fan favorites"
+              link="/popular"
+            />
 
-          {seasonal.length > 0 && (
-            <section className="content-section">
-              <SectionHeader
-                title="This Season"
-                subtitle="Latest releases"
-                link="/seasonal"
-              />
+            <AnimeRow anime={popular} />
+          </section>
+        )}
 
-              <AnimeRow anime={seasonal} />
-            </section>
-          )}
-        </main>
-      )}
+        {seasonal.length > 0 && (
+          <section className="content-section">
+            <SectionHeader
+              title="This Season"
+              subtitle="Latest releases"
+              link="/seasonal"
+            />
+
+            <AnimeRow anime={seasonal} />
+          </section>
+        )}
+
+        {!heroAnime && (
+          <section className="page">
+            <div className="state-box">
+              <h2>Anime data temporarily unavailable</h2>
+              <p>
+                Jikan/MyAnimeList is currently not
+                responding. Please refresh the page
+                after a little while.
+              </p>
+            </div>
+          </section>
+        )}
+      </main>
 
       <Footer />
       <MobileNav />
