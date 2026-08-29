@@ -298,37 +298,25 @@ async function getAniListStreamingEpisodes(malId) {
   }
 }
 
-export async function getAnimeEpisodes(id, page = 1) {
+export async function getAnimeById(id) {
   if (!id) {
     throw new Error("Anime ID is required.");
   }
 
   const json = await request(
-    `/anime/${encodeURIComponent(id)}/episodes?page=${page}`
+    `/anime/${encodeURIComponent(id)}/full`
   );
 
+  const anime = normalizeAnime(json.data);
+
+  const streamingEpisodes =
+    await getAniListStreamingEpisodes(
+      anime.malId
+    );
+
   return {
-    currentPage:
-      json.pagination?.current_page || page,
-
-    lastPage:
-      json.pagination?.last_visible_page || page,
-
-    hasNextPage:
-      Boolean(json.pagination?.has_next_page),
-
-    items:
-      json.data?.map((episode) => ({
-        id: episode.mal_id,
-        number: episode.mal_id,
-        title:
-          episode.title ||
-          `Episode ${episode.mal_id}`,
-        aired: episode.aired,
-        score: episode.score,
-        filler: episode.filler,
-        recap: episode.recap
-      })) || []
+    ...anime,
+    streamingEpisodes
   };
 }
 
