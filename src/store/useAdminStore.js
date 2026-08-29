@@ -11,10 +11,7 @@ const DEFAULT_SETTINGS = {
 const useAdminStore = create(
   persist(
     (set, get) => ({
-      isAdmin: false,
-
-      admin: null,
-
+    
       anime: [],
 
       episodes: [],
@@ -26,18 +23,6 @@ const useAdminStore = create(
       users: [],
 
       settings: DEFAULT_SETTINGS,
-
-      loginAdmin: (admin) =>
-        set({
-          isAdmin: true,
-          admin,
-        }),
-
-      logoutAdmin: () =>
-        set({
-          isAdmin: false,
-          admin: null,
-        }),
 
       addAnime: (anime) =>
         set((state) => ({
