@@ -113,9 +113,12 @@ export default function Watch() {
       <main className="watch-page">
 
         <VideoPlayer
-          title={`${anime.title} — Episode ${episode}`}
-          trailer={anime.trailer}
-        />
+  title={`${anime.title} — Episode ${episode}`}
+  trailer={anime.trailer}
+  streamingEpisodes={
+    anime.streamingEpisodes || []
+  }
+/>
 
         <div className="watch-info">
           <div>
