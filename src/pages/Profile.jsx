@@ -1,16 +1,23 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import MobileNav from "../components/MobileNav";
+
 import useAuthStore from "../store/useAuthStore";
 import useLibraryStore from "../store/useLibraryStore";
 
 export default function Profile() {
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
+  const logout = useAuthStore(
+    (state) => state.logout
+  );
 
   const watchlist = useLibraryStore(
     (state) => state.watchlist
   );
+
   const history = useLibraryStore(
     (state) => state.history
   );
@@ -20,53 +27,117 @@ export default function Profile() {
       <Navbar />
 
       <main className="page profile-page">
-        <div className="profile-card">
-          <div className="avatar">
-            {user?.name?.charAt(0) || "G"}
-          </div>
 
-          <h1>{user?.name || "Guest User"}</h1>
+        {!user ? (
+          <div className="profile-card">
 
-          <p>
-            {user?.email || "Sign in to sync your library."}
-          </p>
+            <div className="avatar">
+              👤
+            </div>
 
-          {user ? (
-            <button
-              className="secondary-button"
-              onClick={logout}
-            >
-              Logout
-            </button>
-          ) : (
+            <h1>
+              Welcome to AnimeVerse
+            </h1>
+
+            <p>
+              Login or create an account
+              to manage your anime library.
+            </p>
+
             <div className="hero-buttons">
-              <Link to="/login" className="primary-button">
+
+              <Link
+                to="/login"
+                className="primary-button"
+              >
                 Login
               </Link>
+
               <Link
                 to="/register"
                 className="secondary-button"
               >
-                Register
+                Create Account
               </Link>
+
             </div>
-          )}
+          </div>
+        ) : (
+          <>
+            <div className="profile-card">
+
+              <div className="avatar">
+                {user.name
+                  ?.charAt(0)
+                  ?.toUpperCase() || "U"}
+              </div>
+
+              <h1>
+                {user.name}
+              </h1>
+
+              <p>
+                {user.email}
+              </p>
+
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={logout}
+              >
+                Logout
+              </button>
+
+            </div>
+
+            <div className="stats-grid">
+
+              <div>
+                <strong>
+                  {watchlist.length}
+                </strong>
+
+                <span>
+                  Watchlist
+                </span>
+              </div>
+
+              <div>
+                <strong>
+                  {history.length}
+                </strong>
+
+                <span>
+                  History
+                </span>
+              </div>
+
+            </div>
+          </>
+        )}
+
+        <div className="profile-links">
+
+          <Link
+            to="/watchlist"
+            className="secondary-button"
+          >
+            My Watchlist
+          </Link>
+
+          <Link
+            to="/history"
+            className="secondary-button"
+          >
+            Watch History
+          </Link>
+
         </div>
 
-        <div className="stats-grid">
-          <div>
-            <strong>{watchlist.length}</strong>
-            <span>Watchlist</span>
-          </div>
-
-          <div>
-            <strong>{history.length}</strong>
-            <span>History</span>
-          </div>
-        </div>
       </main>
 
       <MobileNav />
     </div>
-  );
+    );
 }
+    
