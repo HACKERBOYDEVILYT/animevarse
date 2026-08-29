@@ -5,11 +5,13 @@ import Navbar from "../components/Navbar";
 import MobileNav from "../components/MobileNav";
 import VideoPlayer from "../components/VideoPlayer";
 import EpisodeList from "../components/EpisodeList";
+import Loading from "../components/Loading";
+import ErrorState from "../components/ErrorState";
 
 import {
   getAnimeById,
-  getAnimeEpisodes,
-} from "../services/animeApi";
+  getAnimeEpisodes
+} from "../services/api";
 
 import useLibraryStore from "../store/useLibraryStore";
 
@@ -18,62 +20,88 @@ export default function Watch() {
 
   const [anime, setAnime] = useState(null);
   const [episodes, setEpisodes] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const addToHistory = useLibraryStore(
     (state) => state.addToHistory
   );
 
   useEffect(() => {
-    let active = true;
+    let mounted = true;
 
-    async function load() {
+    async function loadWatchPage() {
       try {
         setLoading(true);
+        setError("");
 
         const [animeData, episodeData] =
           await Promise.all([
             getAnimeById(animeId),
-            getAnimeEpisodes(animeId),
+            getAnimeEpisodes(animeId)
           ]);
 
-        if (!active) return;
+        if (!mounted) return;
 
         setAnime(animeData);
-        setEpisodes(episodeData);
+
+        // IMPORTANT:
+        // getAnimeEpisodes() returns an object
+        // with an "items" array.
+        setEpisodes(episodeData?.items || []);
 
         addToHistory(
           animeData,
           Number(episode)
         );
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(
+          "Watch page error:",
+          err
+        );
+
+        if (mounted) {
+          setError(
+            err?.message ||
+              "Unable to load this anime."
+          );
+        }
       } finally {
-        if (active) {
+        if (mounted) {
           setLoading(false);
         }
       }
     }
 
-    load();
+    if (animeId) {
+      loadWatchPage();
+    }
 
     return () => {
-      active = false;
+      mounted = false;
     };
   }, [animeId, episode, addToHistory]);
 
   if (loading) {
-    return (
-      <div className="loading-screen">
-        Loading episode...
-      </div>
-    );
+    return <Loading text="Loading episode..." />;
   }
 
-  if (!anime) {
+  if (error || !anime) {
     return (
-      <div className="state-box">
-        Anime not found.
+      <div className="app">
+        <Navbar />
+
+        <main className="page">
+          <ErrorState
+            message={
+              error ||
+              "Anime not found."
+            }
+          />
+        </main>
+
+        <MobileNav />
       </div>
     );
   }
@@ -83,6 +111,7 @@ export default function Watch() {
       <Navbar />
 
       <main className="watch-page">
+
         <VideoPlayer
           title={`${anime.title} — Episode ${episode}`}
           trailer={anime.trailer}
@@ -91,7 +120,10 @@ export default function Watch() {
         <div className="watch-info">
           <div>
             <h1>{anime.title}</h1>
-            <p>Episode {episode}</p>
+
+            <p>
+              Episode {episode}
+            </p>
           </div>
 
           <Link
@@ -111,9 +143,11 @@ export default function Watch() {
             currentEpisode={episode}
           />
         </section>
+
       </main>
 
       <MobileNav />
     </div>
-  );
+    );
 }
+  
