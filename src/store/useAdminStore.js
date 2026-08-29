@@ -23,7 +23,12 @@ const useAdminStore = create(
       users: [],
 
       settings: DEFAULT_SETTINGS,
-
+admin: {
+  id: "admin",
+  name: "Administrator",
+  email: "admin@animeverse.local",
+  role: "admin",
+},
       addAnime: (anime) =>
         set((state) => ({
           anime: [
