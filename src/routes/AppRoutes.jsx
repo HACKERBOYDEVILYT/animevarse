@@ -12,6 +12,9 @@ import Watchlist from "../pages/Watchlist";
 import History from "../pages/History";
 import Profile from "../pages/Profile";
 import NotFound from "../pages/NotFound";
+import AdminGuard from "../components/AdminGuard";
+import AdminLogin from "../pages/admin/AdminLogin";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 
 function AppRoutes() {
   return (
@@ -28,7 +31,17 @@ function AppRoutes() {
 
       <Route path="/watchlist" element={<Watchlist />} />
       <Route path="/history" element={<History />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/profile" element={<<Route
+  path="/admin/login"
+  element={<AdminLogin />}
+/>
+
+<Route element={<AdminGuard />}>
+  <Route
+    path="/admin"
+    element={<AdminDashboard />}
+  />
+</Route>
 
       <Route path="*" element={<NotFound />} />
     </Routes>
