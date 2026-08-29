@@ -8,10 +8,10 @@ const useAuthStore = create(
 
       login: (user) => set({ user }),
 
-      logout: () => set({ user: null }),
+      logout: () => set({ user: null })
     }),
     {
-      name: "animeverse-auth",
+      name: "animeverse-auth"
     }
   )
 );
