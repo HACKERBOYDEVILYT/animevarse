@@ -238,6 +238,65 @@ export async function getAnimeById(id) {
 
   return normalizeAnime(json.data);
 }
+const ANILIST_API = "https://graphql.anilist.co";
+
+async function getAniListStreamingEpisodes(malId) {
+  if (!malId) return [];
+
+  const query = `
+    query ($malId: Int) {
+      Media(idMal: $malId, type: ANIME) {
+        id
+        siteUrl
+        streamingEpisodes {
+          title
+          thumbnail
+          url
+          site
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await fetch(ANILIST_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          malId: Number(malId)
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `AniList error: ${response.status}`
+      );
+    }
+
+    const json = await response.json();
+
+    return (
+      json?.data?.Media?.streamingEpisodes || []
+    ).filter(
+      (item) =>
+        item?.url &&
+        item?.site
+    );
+  } catch (error) {
+    console.warn(
+      "AniList streaming lookup failed:",
+      error
+    );
+
+    return[];
+  }
+}
 
 export async function getAnimeEpisodes(id, page = 1) {
   if (!id) {
