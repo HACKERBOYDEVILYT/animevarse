@@ -11,8 +11,17 @@ export default function Search() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const debounced = useDebounce(query);
+  const result = await searchAnime(
+  query,
+  page
+);
+
+setAnime(result.items);
+
+setPagination(result);
 
   useEffect(() => {
     setLoading(true);
@@ -21,6 +30,19 @@ export default function Search() {
       .then(setResults)
       .finally(() => setLoading(false));
   }, [debounced]);
+  <Pagination
+  page={page}
+  hasNextPage={pagination.hasNextPage}
+  onPageChange={(nextPage) => {
+    setPage(nextPage);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }}
+  loading={loading}
+/>
 
   return (
     <div className="app">
