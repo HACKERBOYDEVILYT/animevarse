@@ -1,60 +1,45 @@
 import { useEffect, useState } from "react";
-
 import Navbar from "../components/Navbar";
 import MobileNav from "../components/MobileNav";
 import Hero from "../components/Hero";
-import AnimeGrid from "../components/AnimeGrid";
+import AnimeRow from "../components/AnimeRow";
 import SectionHeader from "../components/SectionHeader";
 import Footer from "../components/Footer";
 import Loading from "../components/Loading";
-
 import {
   getTrendingAnime,
   getPopularAnime,
   getSeasonalAnime,
 } from "../services/api";
 
-function Home() {
+export default function Home() {
   const [loading, setLoading] = useState(true);
   const [trending, setTrending] = useState([]);
   const [popular, setPopular] = useState([]);
   const [seasonal, setSeasonal] = useState([]);
 
   useEffect(() => {
-    async function loadHome() {
-      try {
-        const [trendingData, popularData, seasonalData] =
-          await Promise.all([
-            getTrendingAnime(),
-            getPopularAnime(),
-            getSeasonalAnime(),
-          ]);
-
-        setTrending(trendingData);
-        setPopular(popularData);
-        setSeasonal(seasonalData);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadHome();
+    Promise.all([
+      getTrendingAnime(),
+      getPopularAnime(),
+      getSeasonalAnime(),
+    ])
+      .then(([t, p, s]) => {
+        setTrending(t);
+        setPopular(p);
+        setSeasonal(s);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <Loading />;
-  }
-
-  const heroAnime = trending[0];
+  if (loading) return <Loading />;
 
   return (
     <div className="app">
       <Navbar />
 
       <main>
-        <Hero anime={heroAnime} />
+        <Hero anime={trending[0]} />
 
         <section className="content-section">
           <SectionHeader
@@ -62,7 +47,7 @@ function Home() {
             subtitle="What everyone is watching"
             link="/trending"
           />
-          <AnimeGrid anime={trending} />
+          <AnimeRow anime={trending} />
         </section>
 
         <section className="content-section">
@@ -71,7 +56,7 @@ function Home() {
             subtitle="Fan favorites"
             link="/popular"
           />
-          <AnimeGrid anime={popular} />
+          <AnimeRow anime={popular} />
         </section>
 
         <section className="content-section">
@@ -80,7 +65,7 @@ function Home() {
             subtitle="Latest releases"
             link="/seasonal"
           />
-          <AnimeGrid anime={seasonal} />
+          <AnimeRow anime={seasonal} />
         </section>
       </main>
 
@@ -89,5 +74,3 @@ function Home() {
     </div>
   );
 }
-
-export default Home;
