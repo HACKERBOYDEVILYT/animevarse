@@ -3,14 +3,12 @@ import { Link } from "react-router-dom";
 export default function EpisodeList({
   anime,
   episodes = [],
-  currentEpisode
+  currentEpisode,
 }) {
-  if (!episodes.length) {
+  if (!episodes || episodes.length === 0) {
     return (
       <div className="state-box">
-        <p>
-          No episode data available.
-        </p>
+        <p>No episode data available.</p>
       </div>
     );
   }
@@ -18,19 +16,23 @@ export default function EpisodeList({
   return (
     <div className="episode-list">
       {episodes.map((episode) => {
-        const episodeNumber =
-          Number(episode.number);
+        const episodeNumber = Number(
+          episode.number
+        );
 
-        const active =
+        const isActive =
           Number(currentEpisode) ===
           episodeNumber;
 
         return (
           <Link
-            key={episode.id}
+            key={
+              episode.id ??
+              `episode-${episodeNumber}`
+            }
             to={`/watch/${anime.id}/${episodeNumber}`}
             className={
-              active
+              isActive
                 ? "episode active"
                 : "episode"
             }
@@ -40,8 +42,12 @@ export default function EpisodeList({
             }
           >
             <span>
-              EP {episodeNumber}
+              Episode {episodeNumber}
             </span>
           </Link>
         );
-    }
+      })}
+    </div>
+    );
+}
+ 
