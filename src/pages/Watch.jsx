@@ -1,31 +1,82 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import Navbar from "../components/Navbar";
 import MobileNav from "../components/MobileNav";
 import VideoPlayer from "../components/VideoPlayer";
 import EpisodeList from "../components/EpisodeList";
-import { getAnimeById } from "../services/api";
+
+import {
+  getAnimeById,
+  getAnimeEpisodes,
+} from "../services/animeApi";
+
 import useLibraryStore from "../store/useLibraryStore";
 
 export default function Watch() {
   const { animeId, episode } = useParams();
+
   const [anime, setAnime] = useState(null);
+  const [episodes, setEpisodes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const addToHistory = useLibraryStore(
     (state) => state.addToHistory
   );
 
   useEffect(() => {
-    getAnimeById(animeId).then((item) => {
-      setAnime(item);
+    let active = true;
 
-      if (item) {
-        addToHistory(item, Number(episode));
+    async function load() {
+      try {
+        setLoading(true);
+
+        const [animeData, episodeData] =
+          await Promise.all([
+            getAnimeById(animeId),
+            getAnimeEpisodes(animeId),
+          ]);
+
+        if (!active) return;
+
+        setAnime(animeData);
+        setEpisodes(episodeData);
+
+        addToHistory(
+          animeData,
+          Number(episode)
+        );
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    });
+    }
+
+    load();
+
+    return () => {
+      active = false;
+    };
   }, [animeId, episode, addToHistory]);
 
-  if (!anime) return null;
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        Loading episode...
+      </div>
+    );
+  }
+
+  if (!anime) {
+    return (
+      <div className="state-box">
+        Anime not found.
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -34,6 +85,7 @@ export default function Watch() {
       <main className="watch-page">
         <VideoPlayer
           title={`${anime.title} — Episode ${episode}`}
+          trailer={anime.trailer}
         />
 
         <div className="watch-info">
@@ -52,8 +104,10 @@ export default function Watch() {
 
         <section className="episodes-section">
           <h2>Episodes</h2>
+
           <EpisodeList
             anime={anime}
+            episodes={episodes}
             currentEpisode={episode}
           />
         </section>
