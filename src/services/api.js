@@ -3,7 +3,8 @@ const API_BASE = "https://api.jikan.moe/v4";
 const cache = new Map();
 const pendingRequests = new Map();
 
-const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+const CACHE_TIME = 5 * 60 * 1000;
+const REQUEST_TIMEOUT = 15000;
 
 function getCache(key) {
   const cached = cache.get(key);
@@ -21,14 +22,14 @@ function getCache(key) {
 function setCache(key, data) {
   cache.set(key, {
     data,
-    timestamp: Date.now(),
+    timestamp: Date.now()
   });
 }
 
 async function request(endpoint, options = {}) {
   const {
     cacheEnabled = true,
-    forceRefresh = false,
+    forceRefresh = false
   } = options;
 
   const cacheKey = endpoint;
@@ -41,17 +42,35 @@ async function request(endpoint, options = {}) {
     }
   }
 
-  // Prevent duplicate simultaneous requests
   if (pendingRequests.has(cacheKey)) {
     return pendingRequests.get(cacheKey);
   }
 
-  const promise = fetch(`${API_BASE}${endpoint}`)
+  const controller = new AbortController();
+
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, REQUEST_TIMEOUT);
+
+  const promise = fetch(`${API_BASE}${endpoint}`, {
+    signal: controller.signal,
+    headers: {
+      Accept: "application/json"
+    }
+  })
     .then(async (response) => {
       if (!response.ok) {
-        throw new Error(
-          `Jikan API error: ${response.status}`
-        );
+        let message = `Jikan API error: ${response.status}`;
+
+        try {
+          const body = await response.json();
+
+          if (body?.message) {
+            message = body.message;
+          }
+        } catch {}
+
+        throw new Error(message);
       }
 
       const json = await response.json();
@@ -62,7 +81,17 @@ async function request(endpoint, options = {}) {
 
       return json;
     })
+    .catch((error) => {
+      if (error.name === "AbortError") {
+        throw new Error(
+          "The anime API request timed out. Please try again."
+        );
+      }
+
+      throw error;
+    })
     .finally(() => {
+      clearTimeout(timeout);
       pendingRequests.delete(cacheKey);
     });
 
@@ -71,10 +100,10 @@ async function request(endpoint, options = {}) {
   return promise;
 }
 
-function normalizeAnime(item) {
+export function normalizeAnime(item = {}) {
   return {
-    id: String(item.mal_id),
-    malId: item.mal_id,
+    id: String(item.mal_id ?? ""),
+    malId: item.mal_id ?? null,
 
     title:
       item.title_english ||
@@ -86,6 +115,8 @@ function normalizeAnime(item) {
     image:
       item.images?.webp?.large_image_url ||
       item.images?.jpg?.large_image_url ||
+      item.images?.webp?.image_url ||
+      item.images?.jpg?.image_url ||
       "",
 
     smallImage:
@@ -97,6 +128,7 @@ function normalizeAnime(item) {
       item.trailer?.images?.maximum_image_url ||
       item.trailer?.images?.large_image_url ||
       item.images?.webp?.large_image_url ||
+      item.images?.jpg?.large_image_url ||
       "",
 
     trailer:
@@ -124,21 +156,19 @@ function normalizeAnime(item) {
     genres:
       item.genres?.map((genre) => ({
         id: genre.mal_id,
-        name: genre.name,
+        name: genre.name
       })) || [],
 
     studios:
       item.studios?.map((studio) => studio.name) || [],
 
     duration: item.duration || null,
+
+    source: item.source || null
   };
 }
 
-/* -----------------------------
-   Generic paginated response
------------------------------ */
-
-function normalizePagination(json) {
+function normalizePagination(json = {}) {
   return {
     currentPage:
       json.pagination?.current_page || 1,
@@ -150,17 +180,11 @@ function normalizePagination(json) {
       Boolean(json.pagination?.has_next_page),
 
     items:
-      json.data?.map(normalizeAnime) || [],
+      json.data?.map(normalizeAnime) || []
   };
 }
 
-/* -----------------------------
-   Trending
------------------------------ */
-
-export async function getTrendingAnime(
-  page = 1
-) {
+export async function getTrendingAnime(page = 1) {
   const json = await request(
     `/top/anime?filter=airing&limit=24&page=${page}`
   );
@@ -168,13 +192,7 @@ export async function getTrendingAnime(
   return normalizePagination(json);
 }
 
-/* -----------------------------
-   Popular
------------------------------ */
-
-export async function getPopularAnime(
-  page = 1
-) {
+export async function getPopularAnime(page = 1) {
   const json = await request(
     `/top/anime?filter=bypopularity&limit=24&page=${page}`
   );
@@ -182,13 +200,7 @@ export async function getPopularAnime(
   return normalizePagination(json);
 }
 
-/* -----------------------------
-   Seasonal
------------------------------ */
-
-export async function getSeasonalAnime(
-  page = 1
-) {
+export async function getSeasonalAnime(page = 1) {
   const json = await request(
     `/seasons/now?limit=24&page=${page}`
   );
@@ -196,20 +208,13 @@ export async function getSeasonalAnime(
   return normalizePagination(json);
 }
 
-/* -----------------------------
-   Search
------------------------------ */
-
-export async function searchAnime(
-  query,
-  page = 1
-) {
+export async function searchAnime(query, page = 1) {
   if (!query?.trim()) {
     return {
       currentPage: 1,
       lastPage: 1,
       hasNextPage: false,
-      items: [],
+      items: []
     };
   }
 
@@ -222,28 +227,25 @@ export async function searchAnime(
   return normalizePagination(json);
 }
 
-/* -----------------------------
-   Anime details
------------------------------ */
-
 export async function getAnimeById(id) {
+  if (!id) {
+    throw new Error("Anime ID is required.");
+  }
+
   const json = await request(
-    `/anime/${id}/full`
+    `/anime/${encodeURIComponent(id)}/full`
   );
 
   return normalizeAnime(json.data);
 }
 
-/* -----------------------------
-   Episodes
------------------------------ */
+export async function getAnimeEpisodes(id, page = 1) {
+  if (!id) {
+    throw new Error("Anime ID is required.");
+  }
 
-export async function getAnimeEpisodes(
-  id,
-  page = 1
-) {
   const json = await request(
-    `/anime/${id}/episodes?page=${page}`
+    `/anime/${encodeURIComponent(id)}/episodes?page=${page}`
   );
 
   return {
@@ -266,19 +268,70 @@ export async function getAnimeEpisodes(
         aired: episode.aired,
         score: episode.score,
         filler: episode.filler,
-        recap: episode.recap,
-      })) || [],
+        recap: episode.recap
+      })) || []
   };
 }
 
-/* -----------------------------
-   Genre
------------------------------ */
+const GENRE_IDS = {
+  action: 1,
+  adventure: 2,
+  cars: 3,
+  comedy: 4,
+  avantgarde: 5,
+  "avant-garde": 5,
+  demons: 6,
+  mystery: 7,
+  drama: 8,
+  ecchi: 9,
+  fantasy: 10,
+  game: 11,
+  historical: 13,
+  horror: 14,
+  kids: 15,
+  martialarts: 17,
+  "martial-arts": 17,
+  mecha: 18,
+  music: 19,
+  parody: 20,
+  samurai: 21,
+  romance: 22,
+  school: 23,
+  scifi: 24,
+  "sci-fi": 24,
+  shoujo: 25,
+  girlslove: 26,
+  "girls-love": 26,
+  shounen: 27,
+  seinen: 42,
+  josei: 43,
+  sports: 30,
+  supernatural: 37,
+  suspense: 41,
+  thriller: 41,
+  vampire: 32,
+  "slice-of-life": 36,
+  sliceoflife: 36
+};
 
 export async function getAnimeByGenre(
-  genreId,
+  genre,
   page = 1
 ) {
+  const raw = String(genre || "")
+    .trim()
+    .toLowerCase();
+
+  const genreId =
+    GENRE_IDS[raw] ||
+    (/^\d+$/.test(raw) ? raw : null);
+
+  if (!genreId) {
+    throw new Error(
+      `Unknown anime genre: ${genre}`
+    );
+  }
+
   const json = await request(
     `/anime?genres=${genreId}&limit=24&page=${page}&sfw=true`
   );
@@ -286,22 +339,12 @@ export async function getAnimeByGenre(
   return normalizePagination(json);
 }
 
-/* -----------------------------
-   Clear cache
------------------------------ */
-
 export function clearAnimeCache() {
   cache.clear();
 }
 
-/* -----------------------------
-   Force refresh helper
------------------------------ */
-
-export async function refreshAnime(
-  endpoint
-) {
+export async function refreshAnime(endpoint) {
   return request(endpoint, {
-    forceRefresh: true,
+    forceRefresh: true
   });
 }
