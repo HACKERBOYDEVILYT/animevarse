@@ -1,8 +1,11 @@
-export default function Loading() {
+export default function Loading({
+  text = "Loading..."
+}) {
   return (
-    <div className="loading-screen">
-      <div className="spinner" />
-      <p>Loading AnimeVerse...</p>
+    <div className="loading-state">
+      <div className="loading-spinner" />
+
+      <span>{text}</span>
     </div>
   );
 }
