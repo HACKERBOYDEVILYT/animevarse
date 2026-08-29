@@ -26,27 +26,29 @@ const usePlayerStore = create(
           },
         })),
 
-      getProgress: (animeId, episode) => {
-        const key = `${animeId}-${episode}`;
-
-        return null;
-      },
-
-      clearProgress: (animeId, episode) =>
+      clearProgress: (
+        animeId,
+        episode
+      ) =>
         set((state) => {
-          const copy = { ...state.progress };
+          const progress = {
+            ...state.progress,
+          };
 
-          delete copy[
+          delete progress[
             `${animeId}-${episode}`
           ];
 
-          return {
-            progress: copy,
-          };
+          return { progress };
+        }),
+
+      clearAllProgress: () =>
+        set({
+          progress: {},
         }),
     }),
     {
-      name: "animeverse-player",
+      name: "anime-app-player",
     }
   )
 );
