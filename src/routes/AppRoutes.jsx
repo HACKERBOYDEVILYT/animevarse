@@ -18,29 +18,84 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/" element={<Home />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="/anime/:id" element={<AnimeDetails />} />
+      {/* =========================
+          PUBLIC
+      ========================== */}
+
+      <Route
+        path="/"
+        element={<Home />}
+      />
+
+      <Route
+        path="/search"
+        element={<Search />}
+      />
+
+      <Route
+        path="/anime/:id"
+        element={<AnimeDetails />}
+      />
+
       <Route
         path="/watch/:animeId/:episode"
         element={<Watch />}
       />
-      <Route path="/trending" element={<Trending />} />
-      <Route path="/popular" element={<Popular />} />
-      <Route path="/seasonal" element={<Seasonal />} />
-      <Route path="/genre/:genre" element={<Genre />} />
-      <Route path="/watchlist" element={<Watchlist />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/profile" element={<Profile />} />
 
-      {/* Admin - NO LOGIN */}
+      <Route
+        path="/trending"
+        element={<Trending />}
+      />
+
+      <Route
+        path="/popular"
+        element={<Popular />}
+      />
+
+      <Route
+        path="/seasonal"
+        element={<Seasonal />}
+      />
+
+      <Route
+        path="/genre/:genre"
+        element={<Genre />}
+      />
+
+      <Route
+        path="/watchlist"
+        element={<Watchlist />}
+      />
+
+      <Route
+        path="/history"
+        element={<History />}
+      />
+
+      <Route
+        path="/profile"
+        element={<Profile />}
+      />
+
+      {/* =========================
+          ADMIN
+          NO LOGIN
+          NO GUARD
+      ========================== */}
+
       <Route
         path="/admin"
         element={<AdminDashboard />}
       />
 
-      <Route path="*" element={<NotFound />} />
+      {/* =========================
+          404
+      ========================== */}
+
+      <Route
+        path="*"
+        element={<NotFound />}
+      />
     </Routes>
   );
 }
