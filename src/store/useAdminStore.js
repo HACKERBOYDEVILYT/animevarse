@@ -1,17 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-const DEFAULT_SETTINGS = {
-  siteName: "AnimeVerse",
-  maintenanceMode: false,
-  allowRegistration: true,
-  allowGuestWatching: true,
-};
-
 const useAdminStore = create(
   persist(
     (set, get) => ({
-    
+      // =========================
+      // ADMIN
+      // =========================
+
+      admin: {
+        id: "admin",
+        name: "Administrator",
+        role: "admin",
+      },
+
+      // =========================
+      // DATA
+      // =========================
+
       anime: [],
 
       episodes: [],
@@ -22,13 +28,17 @@ const useAdminStore = create(
 
       users: [],
 
-      settings: DEFAULT_SETTINGS,
-admin: {
-  id: "admin",
-  name: "Administrator",
-  email: "admin@animeverse.local",
-  role: "admin",
-},
+      settings: {
+        siteName: "AnimeVerse",
+        maintenanceMode: false,
+        allowRegistration: true,
+        allowGuestWatching: true,
+      },
+
+      // =========================
+      // ANIME
+      // =========================
+
       addAnime: (anime) =>
         set((state) => ({
           anime: [
@@ -38,26 +48,23 @@ admin: {
               id:
                 anime.id ||
                 crypto.randomUUID(),
-              createdAt:
-                Date.now(),
-              updatedAt:
-                Date.now(),
               enabled: true,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
             },
           ],
         })),
 
       updateAnime: (id, updates) =>
         set((state) => ({
-          anime: state.anime.map(
-            (item) =>
-              String(item.id) === String(id)
-                ? {
-                    ...item,
-                    ...updates,
-                    updatedAt: Date.now(),
-                  }
-                : item
+          anime: state.anime.map((item) =>
+            String(item.id) === String(id)
+              ? {
+                  ...item,
+                  ...updates,
+                  updatedAt: Date.now(),
+                }
+              : item
           ),
         })),
 
@@ -67,35 +74,36 @@ admin: {
             (item) =>
               String(item.id) !== String(id)
           ),
-          episodes:
-            state.episodes.filter(
-              (item) =>
-                String(item.animeId) !==
-                String(id)
-            ),
-          featured:
-            state.featured.filter(
-              (item) =>
-                String(item.animeId) !==
-                String(id)
-            ),
+
+          episodes: state.episodes.filter(
+            (item) =>
+              String(item.animeId) !==
+              String(id)
+          ),
+
+          featured: state.featured.filter(
+            (item) =>
+              String(item.animeId) !==
+              String(id)
+          ),
         })),
 
       toggleAnime: (id) =>
         set((state) => ({
-          anime: state.anime.map(
-            (item) =>
-              String(item.id) === String(id)
-                ? {
-                    ...item,
-                    enabled:
-                      !item.enabled,
-                    updatedAt:
-                      Date.now(),
-                  }
-                : item
+          anime: state.anime.map((item) =>
+            String(item.id) === String(id)
+              ? {
+                  ...item,
+                  enabled: !item.enabled,
+                  updatedAt: Date.now(),
+                }
+              : item
           ),
         })),
+
+      // =========================
+      // EPISODES
+      // =========================
 
       addEpisode: (episode) =>
         set((state) => ({
@@ -111,22 +119,18 @@ admin: {
           ],
         })),
 
-      updateEpisode: (
-        id,
-        updates
-      ) =>
+      updateEpisode: (id, updates) =>
         set((state) => ({
-          episodes:
-            state.episodes.map(
-              (item) =>
-                String(item.id) ===
-                String(id)
-                  ? {
-                      ...item,
-                      ...updates,
-                    }
-                  : item
-            ),
+          episodes: state.episodes.map(
+            (item) =>
+              String(item.id) ===
+              String(id)
+                ? {
+                    ...item,
+                    ...updates,
+                  }
+                : item
+          ),
         })),
 
       deleteEpisode: (id) =>
@@ -139,20 +143,20 @@ admin: {
             ),
         })),
 
-      setFeatured: (items) =>
-        set({
-          featured: items,
-        }),
+      // =========================
+      // FEATURED
+      // =========================
 
       addFeatured: (animeId) =>
         set((state) => {
-          if (
+          const exists =
             state.featured.some(
               (item) =>
                 String(item.animeId) ===
                 String(animeId)
-            )
-          ) {
+            );
+
+          if (exists) {
             return state;
           }
 
@@ -179,6 +183,15 @@ admin: {
             ),
         })),
 
+      setFeatured: (items) =>
+        set({
+          featured: items,
+        }),
+
+      // =========================
+      // PROVIDERS
+      // =========================
+
       addProvider: (provider) =>
         set((state) => ({
           providers: [
@@ -189,16 +202,12 @@ admin: {
                 provider.id ||
                 crypto.randomUUID(),
               enabled: true,
-              createdAt:
-                Date.now(),
+              createdAt: Date.now(),
             },
           ],
         })),
 
-      updateProvider: (
-        id,
-        updates
-      ) =>
+      updateProvider: (id, updates) =>
         set((state) => ({
           providers:
             state.providers.map(
@@ -223,15 +232,49 @@ admin: {
             ),
         })),
 
-      updateSettings: (
-        updates
-      ) =>
+      // =========================
+      // USERS
+      // =========================
+
+      setUsers: (users) =>
+        set({
+          users,
+        }),
+
+      // =========================
+      // SETTINGS
+      // =========================
+
+      updateSettings: (updates) =>
         set((state) => ({
           settings: {
             ...state.settings,
             ...updates,
           },
         })),
+
+      // =========================
+      // EXPORT
+      // =========================
+
+      exportData: () => {
+        const state = get();
+
+        return {
+          anime: state.anime,
+          episodes: state.episodes,
+          featured: state.featured,
+          providers: state.providers,
+          users: state.users,
+          settings: state.settings,
+          exportedAt:
+            new Date().toISOString(),
+        };
+      },
+
+      // =========================
+      // RESET
+      // =========================
 
       resetAdminData: () =>
         set({
@@ -240,28 +283,13 @@ admin: {
           featured: [],
           providers: [],
           users: [],
-          settings:
-            DEFAULT_SETTINGS,
+          settings: {
+            siteName: "AnimeVerse",
+            maintenanceMode: false,
+            allowRegistration: true,
+            allowGuestWatching: true,
+          },
         }),
-
-      exportData: () => {
-        const state = get();
-
-        return {
-          anime: state.anime,
-          episodes:
-            state.episodes,
-          featured:
-            state.featured,
-          providers:
-            state.providers,
-          users: state.users,
-          settings:
-            state.settings,
-          exportedAt:
-            new Date().toISOString(),
-        };
-      },
     }),
     {
       name: "animeverse-admin",
