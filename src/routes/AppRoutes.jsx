@@ -11,27 +11,19 @@ import Genre from "../pages/Genre";
 import Watchlist from "../pages/Watchlist";
 import History from "../pages/History";
 import Profile from "../pages/Profile";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
 import NotFound from "../pages/NotFound";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
-import ApiProviders from "../pages/admin/ApiProviders";
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* =========================
-          PUBLIC
-      ========================== */}
+      {/* Public pages */}
+      <Route path="/" element={<Home />} />
 
-      <Route
-        path="/"
-        element={<Home />}
-      />
-
-      <Route
-        path="/search"
-        element={<Search />}
-      />
+      <Route path="/search" element={<Search />} />
 
       <Route
         path="/anime/:id"
@@ -78,25 +70,24 @@ function AppRoutes() {
         element={<Profile />}
       />
 
-      {/* =========================
-          ADMIN
-          NO LOGIN
-      ========================== */}
+      {/* Authentication */}
+      <Route
+        path="/login"
+        element={<Login />}
+      />
 
+      <Route
+        path="/register"
+        element={<Register />}
+      />
+
+      {/* Admin */}
       <Route
         path="/admin"
         element={<AdminDashboard />}
       />
 
-      <Route
-        path="/admin/providers"
-        element={<ApiProviders />}
-      />
-
-      {/* =========================
-          404
-      ========================== */}
-
+      {/* 404 */}
       <Route
         path="*"
         element={<NotFound />}
