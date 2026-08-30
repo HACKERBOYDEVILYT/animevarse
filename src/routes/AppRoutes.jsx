@@ -16,6 +16,8 @@ import Register from "../pages/Register";
 import NotFound from "../pages/NotFound";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import { AdminAnime, AdminEpisodes, AdminFeatured, AdminUsers, AdminAnalytics, AdminSettings } from "../pages/admin/AdminManagement";
+import ApiProviders from "../pages/admin/ApiProviders";
 
 function AppRoutes() {
   return (
@@ -82,10 +84,14 @@ function AppRoutes() {
       />
 
       {/* Admin */}
-      <Route
-        path="/admin"
-        element={<AdminDashboard />}
-      />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/anime" element={<AdminAnime />} />
+      <Route path="/admin/episodes" element={<AdminEpisodes />} />
+      <Route path="/admin/featured" element={<AdminFeatured />} />
+      <Route path="/admin/providers" element={<ApiProviders />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/analytics" element={<AdminAnalytics />} />
+      <Route path="/admin/settings" element={<AdminSettings />} />
 
       {/* 404 */}
       <Route
@@ -96,4 +102,4 @@ function AppRoutes() {
   );
 }
 
-export default AppRoutes;
+export default AppRoutes
