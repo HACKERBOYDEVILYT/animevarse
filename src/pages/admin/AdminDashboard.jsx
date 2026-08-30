@@ -1,15 +1,16 @@
 import {
+  Activity,
+  BarChart3,
+  ExternalLink,
   Film,
+  Globe,
   PlaySquare,
+  Plus,
+  Server,
+  Settings,
   Star,
   Tv,
   Users,
-  BarChart3,
-  ExternalLink,
-  Settings,
-  Plus,
-  Trash2,
-  Edit3,
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
@@ -37,13 +38,20 @@ export default function AdminDashboard() {
     (state) => state.users
   );
 
-  const deleteAnime = useAdminStore(
-    (state) => state.deleteAnime
-  );
+  const enabledProviders =
+    providers.filter(
+      (provider) => provider.enabled
+    );
 
-  const toggleAnime = useAdminStore(
-    (state) => state.toggleAnime
-  );
+  const primaryProvider =
+    providers.find(
+      (provider) => provider.primary
+    ) ||
+    [...enabledProviders].sort(
+      (a, b) =>
+        Number(a.priority || 999) -
+        Number(b.priority || 999)
+    )[0];
 
   const stats = [
     {
@@ -65,9 +73,9 @@ export default function AdminDashboard() {
       link: "/admin/featured",
     },
     {
-      title: "Providers",
+      title: "API Providers",
       value: providers.length,
-      icon: Tv,
+      icon: Server,
       link: "/admin/providers",
     },
     {
@@ -78,128 +86,150 @@ export default function AdminDashboard() {
     },
   ];
 
-  function handleDelete(id) {
-    const confirmed = window.confirm(
-      "Delete this anime and all its episodes?"
-    );
-
-    if (confirmed) {
-      deleteAnime(id);
-    }
-  }
-
   return (
     <div className="admin-layout">
-      {/* =========================
-          SIDEBAR
-      ========================== */}
-
       <aside className="admin-sidebar">
-        <div className="admin-logo">
-          Anime<span>Verse</span>
+        <div className="admin-brand">
+          <div className="admin-brand-mark">
+            A
+          </div>
+
+          <div>
+            <strong>
+              AnimeVerse
+            </strong>
+
+            <span>
+              Admin Console
+            </span>
+          </div>
         </div>
 
-        <nav className="admin-nav">
-          <Link
-            to="/admin"
-            className="admin-nav-link active"
-          >
-            <BarChart3 size={18} />
-            Dashboard
-          </Link>
+        <div className="admin-sidebar-section">
+          <span>
+            MANAGEMENT
+          </span>
 
-          <Link
-            to="/admin/anime"
-            className="admin-nav-link"
-          >
-            <Film size={18} />
-            Anime
-          </Link>
+          <nav className="admin-nav">
+            <Link
+              to="/admin"
+              className="admin-nav-link active"
+            >
+              <BarChart3 size={18} />
+              Dashboard
+            </Link>
 
-          <Link
-            to="/admin/episodes"
-            className="admin-nav-link"
-          >
-            <PlaySquare size={18} />
-            Episodes
-          </Link>
+            <Link
+              to="/admin/anime"
+              className="admin-nav-link"
+            >
+              <Film size={18} />
+              Anime
+            </Link>
 
-          <Link
-            to="/admin/featured"
-            className="admin-nav-link"
-          >
-            <Star size={18} />
-            Featured
-          </Link>
+            <Link
+              to="/admin/episodes"
+              className="admin-nav-link"
+            >
+              <PlaySquare size={18} />
+              Episodes
+            </Link>
 
-          <Link
-            to="/admin/providers"
-            className="admin-nav-link"
-          >
-            <Tv size={18} />
-            Providers
-          </Link>
+            <Link
+              to="/admin/featured"
+              className="admin-nav-link"
+            >
+              <Star size={18} />
+              Featured
+            </Link>
 
-          <Link
-            to="/admin/users"
-            className="admin-nav-link"
-          >
-            <Users size={18} />
-            Users
-          </Link>
+            <Link
+              to="/admin/providers"
+              className="admin-nav-link"
+            >
+              <Server size={18} />
+              API Providers
+            </Link>
 
-          <Link
-            to="/admin/analytics"
-            className="admin-nav-link"
-          >
-            <BarChart3 size={18} />
-            Analytics
-          </Link>
+            <Link
+              to="/admin/users"
+              className="admin-nav-link"
+            >
+              <Users size={18} />
+              Users
+            </Link>
+          </nav>
+        </div>
 
-          <Link
-            to="/admin/settings"
-            className="admin-nav-link"
-          >
-            <Settings size={18} />
-            Settings
-          </Link>
-        </nav>
+        <div className="admin-sidebar-section">
+          <span>
+            SYSTEM
+          </span>
+
+          <nav className="admin-nav">
+            <Link
+              to="/admin/analytics"
+              className="admin-nav-link"
+            >
+              <Activity size={18} />
+              Analytics
+            </Link>
+
+            <Link
+              to="/admin/settings"
+              className="admin-nav-link"
+            >
+              <Settings size={18} />
+              Settings
+            </Link>
+          </nav>
+        </div>
 
         <Link
           to="/"
-          className="admin-site-link"
+          className="admin-view-site"
         >
           <ExternalLink size={17} />
           View Website
         </Link>
       </aside>
 
-      {/* =========================
-          MAIN
-      ========================== */}
-
       <main className="admin-main">
-        {/* HEADER */}
-
         <header className="admin-header">
           <div>
-            <h1>Dashboard</h1>
+            <div className="admin-eyebrow">
+              ADMINISTRATION
+            </div>
+
+            <h1>
+              Dashboard
+            </h1>
 
             <p>
-              Manage your AnimeVerse website
+              Control your AnimeVerse
+              content, providers and
+              platform settings.
             </p>
           </div>
 
-          <Link
-            to="/admin/anime?action=add"
-            className="primary-button"
-          >
-            <Plus size={18} />
-            Add Anime
-          </Link>
-        </header>
+          <div className="admin-header-actions">
+            <Link
+              to="/"
+              className="secondary-button"
+            >
+              <ExternalLink size={17} />
+              View Site
+            </Link>
 
-        {/* STATS */}
+            <Link
+              to="/admin/providers"
+              className="primary-button"
+            >
+              <Plus size={17} />
+              Add API
+            </Link>
+          </div>
+        </header>
 
         <section className="admin-stats">
           {stats.map(
@@ -215,320 +245,260 @@ export default function AdminDashboard() {
                 className="admin-stat-card"
               >
                 <div className="admin-stat-icon">
-                  <Icon size={22} />
+                  <Icon size={21} />
                 </div>
 
-                <div className="admin-stat-content">
-                  <strong>
-                    {value}
-                  </strong>
-
+                <div>
                   <span>
                     {title}
                   </span>
+
+                  <strong>
+                    {value}
+                  </strong>
                 </div>
               </Link>
             )
           )}
         </section>
 
-        {/* QUICK ACTIONS */}
+        <section className="admin-dashboard-grid">
+          <div className="admin-panel admin-hero-panel">
+            <div className="admin-panel-header">
+              <div>
+                <div className="admin-panel-label">
+                  API ROUTING
+                </div>
 
-        <section className="admin-panel">
-          <div className="admin-panel-header">
-            <div>
-              <h2>
-                Quick Actions
-              </h2>
+                <h2>
+                  Provider Network
+                </h2>
 
-              <p>
-                Manage your content quickly.
-              </p>
-            </div>
-          </div>
+                <p>
+                  Your anime data can use
+                  multiple providers with
+                  automatic priority fallback.
+                </p>
+              </div>
 
-          <div className="admin-actions">
-            <Link
-              to="/admin/anime?action=add"
-              className="primary-button"
-            >
-              <Plus size={17} />
-              Add Anime
-            </Link>
-
-            <Link
-              to="/admin/episodes?action=add"
-              className="secondary-button"
-            >
-              <Plus size={17} />
-              Add Episode
-            </Link>
-
-            <Link
-              to="/admin/providers?action=add"
-              className="secondary-button"
-            >
-              <Plus size={17} />
-              Add Provider
-            </Link>
-
-            <Link
-              to="/admin/featured"
-              className="secondary-button"
-            >
-              <Star size={17} />
-              Manage Featured
-            </Link>
-          </div>
-        </section>
-
-        {/* ANIME TABLE */}
-
-        <section className="admin-panel">
-          <div className="admin-panel-header">
-            <div>
-              <h2>
-                Anime Management
-              </h2>
-
-              <p>
-                Recently added anime.
-              </p>
+              <div className="admin-live">
+                <span />
+                LIVE
+              </div>
             </div>
 
+            <div className="provider-network">
+              {providers.length === 0 ? (
+                <div className="admin-empty-small">
+                  <Server size={28} />
+
+                  <span>
+                    No providers configured.
+                  </span>
+                </div>
+              ) : (
+                [...providers]
+                  .sort(
+                    (a, b) =>
+                      Number(
+                        a.priority || 999
+                      ) -
+                      Number(
+                        b.priority || 999
+                      )
+                  )
+                  .slice(0, 5)
+                  .map(
+                    (provider) => (
+                      <div
+                        className="provider-network-row"
+                        key={
+                          provider.id
+                        }
+                      >
+                        <div className="provider-network-number">
+                          {provider.priority ||
+                            "—"}
+                        </div>
+
+                        <div className="provider-network-icon">
+                          <Globe
+                            size={17}
+                          />
+                        </div>
+
+                        <div className="provider-network-info">
+                          <strong>
+                            {
+                              provider.name
+                            }
+                          </strong>
+
+                          <span>
+                            {
+                              provider.baseUrl
+                            }
+                          </span>
+                        </div>
+
+                        <div
+                          className={`provider-status ${
+                            provider.enabled
+                              ? "online"
+                              : "offline"
+                          }`}
+                        >
+                          <span />
+
+                          {provider.enabled
+                            ? "Enabled"
+                            : "Disabled"}
+                        </div>
+
+                        {provider.primary && (
+                          <span className="api-badge primary">
+                            PRIMARY
+                          </span>
+                        )}
+                      </div>
+                    )
+                  )
+              )}
+            </div>
+
             <Link
-              to="/admin/anime"
-              className="secondary-button"
+              to="/admin/providers"
+              className="admin-panel-footer-link"
             >
-              View All
+              Manage all API providers →
             </Link>
           </div>
 
-          {anime.length === 0 ? (
-            <div className="admin-empty">
-              <Film size={36} />
+          <div className="admin-panel">
+            <div className="admin-panel-header">
+              <div>
+                <div className="admin-panel-label">
+                  QUICK ACTIONS
+                </div>
 
-              <h3>
-                No anime added yet
-              </h3>
+                <h2>
+                  Manage Content
+                </h2>
+              </div>
+            </div>
 
-              <p>
-                Add your first anime from
-                the Anime Manager.
-              </p>
-
+            <div className="admin-quick-actions">
               <Link
                 to="/admin/anime?action=add"
-                className="primary-button"
+                className="admin-quick-action"
               >
-                <Plus size={17} />
-                Add Anime
+                <Film size={20} />
+
+                <div>
+                  <strong>
+                    Add Anime
+                  </strong>
+
+                  <span>
+                    Create a new title
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                to="/admin/episodes?action=add"
+                className="admin-quick-action"
+              >
+                <PlaySquare size={20} />
+
+                <div>
+                  <strong>
+                    Add Episode
+                  </strong>
+
+                  <span>
+                    Add watchable episode
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                to="/admin/providers"
+                className="admin-quick-action"
+              >
+                <Server size={20} />
+
+                <div>
+                  <strong>
+                    Add API
+                  </strong>
+
+                  <span>
+                    Connect another provider
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                to="/admin/featured"
+                className="admin-quick-action"
+              >
+                <Star size={20} />
+
+                <div>
+                  <strong>
+                    Featured
+                  </strong>
+
+                  <span>
+                    Manage homepage content
+                  </span>
+                </div>
               </Link>
             </div>
-          ) : (
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>
-                      Anime
-                    </th>
-
-                    <th>
-                      Status
-                    </th>
-
-                    <th>
-                      Episodes
-                    </th>
-
-                    <th>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {anime
-                    .slice(0, 10)
-                    .map((item) => {
-                      const episodeCount =
-                        episodes.filter(
-                          (episode) =>
-                            String(
-                              episode.animeId
-                            ) ===
-                            String(item.id)
-                        ).length;
-
-                      return (
-                        <tr
-                          key={item.id}
-                        >
-                          <td>
-                            <div className="admin-anime-cell">
-                              {item.cover ||
-                              item.image ? (
-                                <img
-                                  src={
-                                    item.cover ||
-                                    item.image
-                                  }
-                                  alt={
-                                    item.title ||
-                                    "Anime"
-                                  }
-                                />
-                              ) : (
-                                <div className="admin-image-placeholder">
-                                  <Film
-                                    size={18}
-                                  />
-                                </div>
-                              )}
-
-                              <div>
-                                <strong>
-                                  {item.title ||
-                                    item.name ||
-                                    "Untitled"}
-                                </strong>
-
-                                <small>
-                                  ID:{" "}
-                                  {item.id}
-                                </small>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td>
-                            <button
-                              type="button"
-                              className={
-                                item.enabled
-                                  ? "status-ok"
-                                  : "status-off"
-                              }
-                              onClick={() =>
-                                toggleAnime(
-                                  item.id
-                                )
-                              }
-                            >
-                              {item.enabled
-                                ? "Active"
-                                : "Disabled"}
-                            </button>
-                          </td>
-
-                          <td>
-                            {episodeCount}
-                          </td>
-
-                          <td>
-                            <div className="admin-row-actions">
-                              <Link
-                                to={`/admin/anime/edit/${item.id}`}
-                                className="icon-button"
-                                title="Edit"
-                              >
-                                <Edit3
-                                  size={17}
-                                />
-                              </Link>
-
-                              <button
-                                type="button"
-                                className="icon-button danger"
-                                title="Delete"
-                                onClick={() =>
-                                  handleDelete(
-                                    item.id
-                                  )
-                                }
-                              >
-                                <Trash2
-                                  size={17}
-                                />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          </div>
         </section>
 
-        {/* SYSTEM STATUS */}
-
-        <section className="admin-grid">
+        <section className="admin-bottom-grid">
           <div className="admin-panel">
             <div className="admin-panel-header">
               <div>
-                <h2>
-                  API Status
-                </h2>
+                <div className="admin-panel-label">
+                  SYSTEM STATUS
+                </div>
 
-                <p>
-                  Anime data providers.
-                </p>
+                <h2>
+                  Health Overview
+                </h2>
               </div>
             </div>
 
             <div className="health-list">
               <div>
                 <span>
-                  AniList
+                  API Providers
                 </span>
 
                 <b className="status-ok">
-                  Primary
+                  {enabledProviders.length}{" "}
+                  active
                 </b>
               </div>
 
               <div>
                 <span>
-                  Jikan
+                  Primary Provider
                 </span>
 
                 <b className="status-ok">
-                  Fallback
+                  {primaryProvider?.name ||
+                    "Not configured"}
                 </b>
               </div>
 
               <div>
                 <span>
-                  Providers
-                </span>
-
-                <b className="status-ok">
-                  {providers.length}
-                </b>
-              </div>
-            </div>
-          </div>
-
-          <div className="admin-panel">
-            <div className="admin-panel-header">
-              <div>
-                <h2>
-                  Statistics
-                </h2>
-
-                <p>
-                  Current local data.
-                </p>
-              </div>
-            </div>
-
-            <div className="health-list">
-              <div>
-                <span>
-                  Anime
+                  Anime Records
                 </span>
 
                 <b>
@@ -548,22 +518,76 @@ export default function AdminDashboard() {
 
               <div>
                 <span>
-                  Users
+                  Storage
                 </span>
 
-                <b>
-                  {users.length}
+                <b className="status-warning">
+                  Local
                 </b>
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-panel">
+            <div className="admin-panel-header">
+              <div>
+                <div className="admin-panel-label">
+                  PLATFORM
+                </div>
+
+                <h2>
+                  Current Statistics
+                </h2>
+              </div>
+            </div>
+
+            <div className="mini-stat-grid">
+              <div>
+                <Tv size={18} />
+
+                <strong>
+                  {providers.length}
+                </strong>
+
+                <span>
+                  APIs
+                </span>
               </div>
 
               <div>
-                <span>
-                  Featured
-                </span>
+                <Film size={18} />
 
-                <b>
-                  {featured.length}
-                </b>
+                <strong>
+                  {anime.length}
+                </strong>
+
+                <span>
+                  Anime
+                </span>
+              </div>
+
+              <div>
+                <PlaySquare size={18} />
+
+                <strong>
+                  {episodes.length}
+                </strong>
+
+                <span>
+                  Episodes
+                </span>
+              </div>
+
+              <div>
+                <Users size={18} />
+
+                <strong>
+                  {users.length}
+                </strong>
+
+                <span>
+                  Users
+                </span>
               </div>
             </div>
           </div>
