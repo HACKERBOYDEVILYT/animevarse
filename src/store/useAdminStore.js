@@ -1,43 +1,74 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+const DEFAULT_SETTINGS = {
+  siteName: "AnimeVerse",
+  maintenanceMode: false,
+  allowRegistration: true,
+  allowGuestWatching: true,
+};
+
+const DEFAULT_PROVIDERS = [
+  {
+    id: "anilist",
+    name: "AniList",
+    type: "graphql",
+    baseUrl: "https://graphql.anilist.co",
+    apiKey: "",
+    authType: "none",
+    authHeader: "",
+    customHeaders: {},
+    enabled: true,
+    primary: true,
+    priority: 1,
+    corsMode: "direct",
+    animeEndpoint: "/",
+    searchEndpoint: "/",
+    detailsEndpoint: "/",
+    episodesEndpoint: "/",
+    description: "Primary anime metadata provider",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+  {
+    id: "jikan",
+    name: "Jikan",
+    type: "rest",
+    baseUrl: "https://api.jikan.moe/v4",
+    apiKey: "",
+    authType: "none",
+    authHeader: "",
+    customHeaders: {},
+    enabled: true,
+    primary: false,
+    priority: 2,
+    corsMode: "auto",
+    animeEndpoint: "/anime",
+    searchEndpoint: "/anime?q={query}",
+    detailsEndpoint: "/anime/{id}",
+    episodesEndpoint: "/anime/{id}/episodes",
+    description: "Fallback MyAnimeList API",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+];
+
 const useAdminStore = create(
   persist(
     (set, get) => ({
-      // =========================
-      // ADMIN
-      // =========================
-
       admin: {
         id: "admin",
         name: "Administrator",
         role: "admin",
       },
 
-      // =========================
-      // DATA
-      // =========================
-
       anime: [],
-
       episodes: [],
-
       featured: [],
-
-      providers: [],
-
+      providers: DEFAULT_PROVIDERS,
       users: [],
 
-      settings: {
-        siteName: "AnimeVerse",
-        maintenanceMode: false,
-        allowRegistration: true,
-        allowGuestWatching: true,
-      },
-
-      // =========================
-      // ANIME
-      // =========================
+      settings: DEFAULT_SETTINGS,
 
       addAnime: (anime) =>
         set((state) => ({
@@ -45,9 +76,7 @@ const useAdminStore = create(
             ...state.anime,
             {
               ...anime,
-              id:
-                anime.id ||
-                crypto.randomUUID(),
+              id: anime.id || crypto.randomUUID(),
               enabled: true,
               createdAt: Date.now(),
               updatedAt: Date.now(),
@@ -71,20 +100,13 @@ const useAdminStore = create(
       deleteAnime: (id) =>
         set((state) => ({
           anime: state.anime.filter(
-            (item) =>
-              String(item.id) !== String(id)
+            (item) => String(item.id) !== String(id)
           ),
-
           episodes: state.episodes.filter(
-            (item) =>
-              String(item.animeId) !==
-              String(id)
+            (item) => String(item.animeId) !== String(id)
           ),
-
           featured: state.featured.filter(
-            (item) =>
-              String(item.animeId) !==
-              String(id)
+            (item) => String(item.animeId) !== String(id)
           ),
         })),
 
@@ -101,19 +123,13 @@ const useAdminStore = create(
           ),
         })),
 
-      // =========================
-      // EPISODES
-      // =========================
-
       addEpisode: (episode) =>
         set((state) => ({
           episodes: [
             ...state.episodes,
             {
               ...episode,
-              id:
-                episode.id ||
-                crypto.randomUUID(),
+              id: episode.id || crypto.randomUUID(),
               createdAt: Date.now(),
             },
           ],
@@ -121,42 +137,27 @@ const useAdminStore = create(
 
       updateEpisode: (id, updates) =>
         set((state) => ({
-          episodes: state.episodes.map(
-            (item) =>
-              String(item.id) ===
-              String(id)
-                ? {
-                    ...item,
-                    ...updates,
-                  }
-                : item
+          episodes: state.episodes.map((item) =>
+            String(item.id) === String(id)
+              ? { ...item, ...updates }
+              : item
           ),
         })),
 
       deleteEpisode: (id) =>
         set((state) => ({
-          episodes:
-            state.episodes.filter(
-              (item) =>
-                String(item.id) !==
-                String(id)
-            ),
+          episodes: state.episodes.filter(
+            (item) => String(item.id) !== String(id)
+          ),
         })),
-
-      // =========================
-      // FEATURED
-      // =========================
 
       addFeatured: (animeId) =>
         set((state) => {
-          const exists =
+          if (
             state.featured.some(
-              (item) =>
-                String(item.animeId) ===
-                String(animeId)
-            );
-
-          if (exists) {
+              (item) => String(item.animeId) === String(animeId)
+            )
+          ) {
             return state;
           }
 
@@ -165,8 +166,7 @@ const useAdminStore = create(
               ...state.featured,
               {
                 animeId,
-                position:
-                  state.featured.length + 1,
+                position: state.featured.length + 1,
                 enabled: true,
               },
             ],
@@ -175,12 +175,9 @@ const useAdminStore = create(
 
       removeFeatured: (animeId) =>
         set((state) => ({
-          featured:
-            state.featured.filter(
-              (item) =>
-                String(item.animeId) !==
-                String(animeId)
-            ),
+          featured: state.featured.filter(
+            (item) => String(item.animeId) !== String(animeId)
+          ),
         })),
 
       setFeatured: (items) =>
@@ -189,7 +186,7 @@ const useAdminStore = create(
         }),
 
       // =========================
-      // PROVIDERS
+      // API PROVIDERS
       // =========================
 
       addProvider: (provider) =>
@@ -198,38 +195,76 @@ const useAdminStore = create(
             ...state.providers,
             {
               ...provider,
-              id:
-                provider.id ||
-                crypto.randomUUID(),
-              enabled: true,
+              id: provider.id || crypto.randomUUID(),
+              enabled: provider.enabled ?? true,
+              primary: provider.primary ?? false,
+              priority:
+                Number(provider.priority) ||
+                state.providers.length + 1,
+              customHeaders:
+                provider.customHeaders || {},
               createdAt: Date.now(),
+              updatedAt: Date.now(),
             },
           ],
         })),
 
       updateProvider: (id, updates) =>
         set((state) => ({
-          providers:
-            state.providers.map(
-              (item) =>
-                String(item.id) ===
-                String(id)
-                  ? {
-                      ...item,
-                      ...updates,
-                    }
-                  : item
-            ),
+          providers: state.providers.map((item) =>
+            String(item.id) === String(id)
+              ? {
+                  ...item,
+                  ...updates,
+                  updatedAt: Date.now(),
+                }
+              : item
+          ),
         })),
 
       deleteProvider: (id) =>
         set((state) => ({
-          providers:
-            state.providers.filter(
-              (item) =>
-                String(item.id) !==
-                String(id)
-            ),
+          providers: state.providers.filter(
+            (item) => String(item.id) !== String(id)
+          ),
+        })),
+
+      toggleProvider: (id) =>
+        set((state) => ({
+          providers: state.providers.map((item) =>
+            String(item.id) === String(id)
+              ? {
+                  ...item,
+                  enabled: !item.enabled,
+                  updatedAt: Date.now(),
+                }
+              : item
+          ),
+        })),
+
+      setPrimaryProvider: (id) =>
+        set((state) => ({
+          providers: state.providers.map((item) => ({
+            ...item,
+            primary: String(item.id) === String(id),
+            updatedAt:
+              String(item.id) === String(id)
+                ? Date.now()
+                : item.updatedAt,
+          })),
+        })),
+
+      updateProviderPriority: (id, priority) =>
+        set((state) => ({
+          providers: state.providers.map((item) =>
+            String(item.id) === String(id)
+              ? {
+                  ...item,
+                  priority: Number(priority) || 999,
+                  updatedAt: Date.now(),
+                }
+              : item
+          ),
         })),
 
       // =========================
@@ -267,28 +302,18 @@ const useAdminStore = create(
           providers: state.providers,
           users: state.users,
           settings: state.settings,
-          exportedAt:
-            new Date().toISOString(),
+          exportedAt: new Date().toISOString(),
         };
       },
-
-      // =========================
-      // RESET
-      // =========================
 
       resetAdminData: () =>
         set({
           anime: [],
           episodes: [],
           featured: [],
-          providers: [],
+          providers: DEFAULT_PROVIDERS,
           users: [],
-          settings: {
-            siteName: "AnimeVerse",
-            maintenanceMode: false,
-            allowRegistration: true,
-            allowGuestWatching: true,
-          },
+          settings: DEFAULT_SETTINGS,
         }),
     }),
     {
