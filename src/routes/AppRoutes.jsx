@@ -14,6 +14,7 @@ import Profile from "../pages/Profile";
 import NotFound from "../pages/NotFound";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import ApiProviders from "../pages/admin/ApiProviders";
 
 function AppRoutes() {
   return (
@@ -80,12 +81,16 @@ function AppRoutes() {
       {/* =========================
           ADMIN
           NO LOGIN
-          NO GUARD
       ========================== */}
 
       <Route
         path="/admin"
         element={<AdminDashboard />}
+      />
+
+      <Route
+        path="/admin/providers"
+        element={<ApiProviders />}
       />
 
       {/* =========================
