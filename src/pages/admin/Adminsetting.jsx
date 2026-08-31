@@ -1,1890 +1,717 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState
-} from "react";
+export function AdminSettings() {
+  const settings = useAdminStore((s) => s.settings);
+  const updateSettings = useAdminStore((s) => s.updateSettings);
+  const exportData = useAdminStore((s) => s.exportData);
+  const reset = useAdminStore((s) => s.resetAdminData);
 
-import {
-  Save,
-  RotateCcw,
-  Download,
-  Upload,
-  Settings,
-  Globe,
-  Palette,
-  Home,
-  Database,
-  Play,
-  Users,
-  Search,
-  Shield,
-  Wrench,
-  Activity,
-  CheckCircle2,
-  AlertTriangle,
-  Server,
-  Zap,
-  ChevronRight
-} from "lucide-react";
-
-import useAdminStore from "../../store/useAdminStore";
-
-/* =========================================================
-   DEFAULT SETTINGS
-========================================================= */
-
-const DEFAULT_SETTINGS = {
-  /* General */
-  siteName: "AnimeVerse",
-  siteTagline:
-    "Your ultimate anime streaming experience",
-  siteDescription:
-    "Watch and discover your favorite anime.",
-  siteUrl: "",
-  language: "en",
-  timezone: "Asia/Dhaka",
-
-  /* Appearance */
-  theme: "dark",
-  accentColor: "#8b5cf6",
-  animations: true,
-  compactMode: false,
-  roundedCards: true,
-
-  /* Homepage */
-  showHero: true,
-  showTrending: true,
-  showPopular: true,
-  showSeasonal: true,
-  showRecentlyUpdated: true,
-  itemsPerPage: 24,
-
-  /* API */
-  primaryAnimeApi: "anilist",
-  fallbackAnimeApi: "jikan",
-  apiTimeout: 15000,
-  cacheEnabled: true,
-  cacheDuration: 5,
-  retryAttempts: 2,
-
-  /* Player */
-  autoplay: false,
-  autoNextEpisode: true,
-  resumePlayback: true,
-  defaultQuality: "auto",
-  defaultVolume: 80,
-  captions: true,
-  theaterMode: true,
-
-  /* Users */
-  registration: true,
-  guestWatching: true,
-  emailVerification: false,
-  profilePublic: false,
-
-  /* SEO */
-  seoTitle:
-    "AnimeVerse - Watch Anime Online",
-  seoDescription:
-    "Discover and watch anime on AnimeVerse.",
-  seoKeywords:
-    "anime, anime online, watch anime",
-
-  /* Security */
-  sessionDuration: 7,
-  loginAttempts: 5,
-  adminTwoFactor: false,
-
-  /* Maintenance */
-  maintenance: false,
-  maintenanceMessage:
-    "AnimeVerse is currently under maintenance. Please check back soon.",
-
-  /* System */
-  debugMode: false,
-  analyticsEnabled: true
-};
-
-/* =========================================================
-   SIDEBAR
-========================================================= */
-
-const SECTIONS = [
-  {
-    id: "general",
-    label: "General",
-    icon: Globe,
-    description: "Basic website configuration"
-  },
-  {
-    id: "appearance",
-    label: "Appearance",
-    icon: Palette,
-    description: "Theme and visual settings"
-  },
-  {
-    id: "homepage",
-    label: "Homepage",
-    icon: Home,
-    description: "Homepage content controls"
-  },
-  {
-    id: "api",
-    label: "API & Data",
-    icon: Database,
-    description: "Anime API and caching"
-  },
-  {
-    id: "player",
-    label: "Video Player",
-    icon: Play,
-    description: "Playback preferences"
-  },
-  {
-    id: "users",
-    label: "Users",
-    icon: Users,
-    description: "Authentication settings"
-  },
-  {
-    id: "seo",
-    label: "SEO",
-    icon: Search,
-    description: "Search engine settings"
-  },
-  {
-    id: "security",
-    label: "Security",
-    icon: Shield,
-    description: "Security controls"
-  },
-  {
-    id: "maintenance",
-    label: "Maintenance",
-    icon: Wrench,
-    description: "Maintenance mode"
-  },
-  {
-    id: "system",
-    label: "System Health",
-    icon: Activity,
-    description: "System diagnostics"
-  }
-];
-
-/* =========================================================
-   SMALL COMPONENTS
-========================================================= */
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-  description
-}) {
-  return (
-    <div className="setting-row">
-      <div className="setting-copy">
-        <div className="setting-label">
-          {label}
-        </div>
-
-        {description && (
-          <div className="setting-description">
-            {description}
-          </div>
-        )}
-      </div>
-
-      <button
-        type="button"
-        aria-label={label}
-        onClick={() =>
-          onChange(!checked)
-        }
-        className={`setting-toggle ${
-          checked ? "active" : ""
-        }`}
-      >
-        <span />
-      </button>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  description,
-  children
-}) {
-  return (
-    <div className="setting-field">
-      <div className="setting-copy">
-        <div className="setting-label">
-          {label}
-        </div>
-
-        {description && (
-          <div className="setting-description">
-            {description}
-          </div>
-        )}
-      </div>
-
-      <div className="setting-control">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Input({
-  value,
-  onChange,
-  type = "text",
-  placeholder
-}) {
-  return (
-    <input
-      className="admin-input"
-      type={type}
-      value={value ?? ""}
-      placeholder={placeholder}
-      onChange={(e) =>
-        onChange(e.target.value)
-      }
-    />
-  );
-}
-
-function Select({
-  value,
-  onChange,
-  children
-}) {
-  return (
-    <select
-      className="admin-input"
-      value={value}
-      onChange={(e) =>
-        onChange(e.target.value)
-      }
-    >
-      {children}
-    </select>
-  );
-}
-
-function SectionHeader({
-  title,
-  description,
-  icon: Icon
-}) {
-  return (
-    <div className="settings-section-header">
-      <div className="settings-section-icon">
-        <Icon size={20} />
-      </div>
-
-      <div>
-        <h2>{title}</h2>
-        <p>{description}</p>
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   MAIN
-========================================================= */
-
-export default function AdminSettings() {
-  const adminStore = useAdminStore();
-
-  const existingSettings =
-    adminStore?.settings || {};
-
-  const updateSettings =
-    adminStore?.updateSettings;
-
-  const [activeSection, setActiveSection] =
-    useState("general");
-
-  const [settings, setSettings] =
-    useState({
-      ...DEFAULT_SETTINGS,
-      ...existingSettings
+  const toggle = (key) => {
+    updateSettings({
+      [key]: !settings?.[key],
     });
+  };
 
-  const [savedSettings, setSavedSettings] =
-    useState({
-      ...DEFAULT_SETTINGS,
-      ...existingSettings
-    });
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [saved, setSaved] =
-    useState(false);
-
-  const [showReset, setShowReset] =
-    useState(false);
-
-  const [showExport, setShowExport] =
-    useState(false);
-
-  const dirty = useMemo(
-    () =>
-      JSON.stringify(settings) !==
-      JSON.stringify(savedSettings),
-    [settings, savedSettings]
-  );
-
-  useEffect(() => {
-    const merged = {
-      ...DEFAULT_SETTINGS,
-      ...existingSettings
-    };
-
-    setSettings(merged);
-    setSavedSettings(merged);
-  }, [existingSettings]);
-
-  function setValue(key, value) {
-    setSettings((current) => ({
-      ...current,
-      [key]: value
-    }));
-
-    setSaved(false);
-  }
-
-  async function handleSave() {
-    if (!updateSettings) {
-      console.error(
-        "useAdminStore.updateSettings is missing"
-      );
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      await updateSettings(
-        settings
-      );
-
-      setSavedSettings(
-        settings
-      );
-
-      setSaved(true);
-
-      setTimeout(() => {
-        setSaved(false);
-      }, 2500);
-    } catch (error) {
-      console.error(
-        "Failed to save settings:",
-        error
-      );
-
-      alert(
-        "Failed to save settings. Please try again."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleReset() {
-    const reset = {
-      ...DEFAULT_SETTINGS
-    };
-
-    setSettings(reset);
-    setSavedSettings(reset);
-    setShowReset(false);
-    setSaved(false);
-  }
-
-  function handleExport() {
-    const data = JSON.stringify(
-      settings,
-      null,
-      2
-    );
+  const download = () => {
+    const data = exportData();
 
     const blob = new Blob(
-      [data],
-      {
-        type: "application/json"
-      }
+      [JSON.stringify(data, null, 2)],
+      { type: "application/json" }
     );
 
-    const url =
-      URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
 
-    const anchor =
-      document.createElement("a");
+    a.href = url;
+    a.download = "animeverse-admin-backup.json";
 
-    anchor.href = url;
-    anchor.download =
-      "animeverse-settings.json";
-
-    document.body.appendChild(anchor);
-
-    anchor.click();
-
-    anchor.remove();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
 
     URL.revokeObjectURL(url);
+  };
 
-    setShowExport(false);
-  }
+  const SettingToggle = ({
+    title,
+    description,
+    settingKey,
+    danger = false,
+  }) => {
+    const enabled = Boolean(settings?.[settingKey]);
 
-  function handleImport(event) {
-    const file =
-      event.target.files?.[0];
+    return (
+      <div className="av-setting-item">
+        <div className="av-setting-content">
+          <div className="av-setting-title-row">
+            <strong>{title}</strong>
 
-    if (!file) return;
+            <span
+              className={`av-setting-status ${
+                enabled
+                  ? "av-setting-status-on"
+                  : "av-setting-status-off"
+              }`}
+            >
+              {enabled ? "Enabled" : "Disabled"}
+            </span>
+          </div>
 
-    const reader =
-      new FileReader();
+          <span className="av-setting-description">
+            {description}
+          </span>
+        </div>
 
-    reader.onload = () => {
-      try {
-        const imported =
-          JSON.parse(
-            reader.result
-          );
-
-        setSettings({
-          ...DEFAULT_SETTINGS,
-          ...imported
-        });
-
-        setSaved(false);
-      } catch {
-        alert(
-          "Invalid settings file."
-        );
-      }
-    };
-
-    reader.readAsText(file);
-
-    event.target.value = "";
-  }
-
-  const currentSection =
-    SECTIONS.find(
-      (section) =>
-        section.id ===
-        activeSection
+        <button
+          type="button"
+          aria-label={`${title} ${enabled ? "disable" : "enable"}`}
+          aria-pressed={enabled}
+          className={`av-switch ${
+            enabled ? "av-switch-on" : ""
+          } ${danger ? "av-switch-danger" : ""}`}
+          onClick={() => toggle(settingKey)}
+        >
+          <span className="av-switch-track">
+            <span className="av-switch-thumb" />
+          </span>
+        </button>
+      </div>
     );
+  };
 
   return (
-    <div className="admin-settings">
+    <AdminShell
+      title="System Settings"
+      eyebrow="ADMINISTRATION"
+      description="Control site behaviour, access policies and administration data."
+    >
+      <div className="av-settings-page">
 
-      {/* =================================================
-          TOP BAR
-      ================================================= */}
+        {/* GENERAL */}
+        <section className="av-settings-card">
+          <div className="av-settings-card-header">
+            <div>
+              <span className="av-settings-label">
+                GENERAL
+              </span>
 
-      <div className="settings-topbar">
+              <h2>Platform Behaviour</h2>
 
-        <div>
-          <div className="admin-page-eyebrow">
-            ADMINISTRATION
+              <p>
+                Manage how AnimeVerse behaves for visitors and
+                registered users.
+              </p>
+            </div>
+
+            <div className="av-settings-icon">
+              <Settings size={20} />
+            </div>
           </div>
 
-          <h1>
-            Settings
-          </h1>
+          <div className="av-settings-list">
 
-          <p>
-            Configure and manage your
-            AnimeVerse platform.
-          </p>
-        </div>
+            <SettingToggle
+              title="Maintenance Mode"
+              description="Temporarily disable normal site access while you perform maintenance."
+              settingKey="maintenanceMode"
+              danger
+            />
 
-        <div className="settings-actions">
+            <SettingToggle
+              title="Allow Registration"
+              description="Allow visitors to create new AnimeVerse accounts."
+              settingKey="allowRegistration"
+            />
 
-          {dirty && (
-            <span className="unsaved-badge">
-              <span />
-              Unsaved changes
-            </span>
-          )}
+            <SettingToggle
+              title="Guest Watching"
+              description="Allow visitors to watch available episodes without signing in."
+              settingKey="allowGuestWatching"
+            />
 
-          {saved && (
-            <span className="saved-badge">
-              <CheckCircle2
-                size={16}
-              />
-              Saved
-            </span>
-          )}
+          </div>
+        </section>
 
-          <button
-            type="button"
-            className="admin-btn secondary"
-            onClick={() =>
-              setShowReset(true)
-            }
-          >
-            <RotateCcw size={17} />
-            Reset
-          </button>
+        {/* BRANDING */}
+        <section className="av-settings-card">
+          <div className="av-settings-card-header">
+            <div>
+              <span className="av-settings-label">
+                BRANDING
+              </span>
 
-          <button
-            type="button"
-            className="admin-btn primary"
-            disabled={
-              saving || !dirty
-            }
-            onClick={handleSave}
-          >
-            <Save size={17} />
+              <h2>Site Identity</h2>
 
-            {saving
-              ? "Saving..."
-              : "Save Changes"}
-          </button>
+              <p>
+                Configure the name displayed throughout your
+                AnimeVerse application.
+              </p>
+            </div>
 
-        </div>
-      </div>
-
-      {/* =================================================
-          LAYOUT
-      ================================================= */}
-
-      <div className="settings-layout">
-
-        {/* SIDEBAR */}
-
-        <aside className="settings-sidebar">
-
-          <div className="settings-sidebar-title">
-            Configuration
+            <div className="av-settings-icon">
+              <Star size={20} />
+            </div>
           </div>
 
-          {SECTIONS.map(
-            (section) => {
-              const Icon =
-                section.icon;
+          <div className="av-brand-field">
+            <label htmlFor="animeverse-site-name">
+              Site Name
+            </label>
 
-              const active =
-                activeSection ===
-                section.id;
-
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() =>
-                    setActiveSection(
-                      section.id
-                    )
-                  }
-                  className={`settings-nav-item ${
-                    active
-                      ? "active"
-                      : ""
-                  }`}
-                >
-                  <span className="settings-nav-icon">
-                    <Icon size={18} />
-                  </span>
-
-                  <span className="settings-nav-text">
-                    <strong>
-                      {section.label}
-                    </strong>
-
-                    <small>
-                      {section.description}
-                    </small>
-                  </span>
-
-                  <ChevronRight
-                    size={16}
-                  />
-                </button>
-              );
-            }
-          )}
-
-        </aside>
-
-        {/* CONTENT */}
-
-        <main className="settings-content">
-
-          <div className="settings-content-title">
             <span>
-              {currentSection?.label}
+              Brand name shown by the application.
             </span>
+
+            <input
+              id="animeverse-site-name"
+              type="text"
+              value={settings?.siteName || ""}
+              placeholder="AnimeVerse"
+              maxLength={60}
+              onChange={(e) =>
+                updateSettings({
+                  siteName: e.target.value,
+                })
+              }
+            />
 
             <small>
-              Dashboard / Settings /{" "}
-              {currentSection?.label}
+              {(settings?.siteName || "").length}/60 characters
             </small>
           </div>
+        </section>
 
-          {/* =================================================
-              GENERAL
-          ================================================= */}
+        {/* DATA MANAGEMENT */}
+        <section className="av-settings-card">
+          <div className="av-settings-card-header">
+            <div>
+              <span className="av-settings-label">
+                DATA MANAGEMENT
+              </span>
 
-          {activeSection ===
-            "general" && (
-            <div className="settings-card">
+              <h2>Administration Tools</h2>
 
-              <SectionHeader
-                title="General Settings"
-                description="Configure the basic identity and regional settings of your website."
-                icon={Globe}
-              />
-
-              <Field
-                label="Site Name"
-                description="The name displayed throughout AnimeVerse."
-              >
-                <Input
-                  value={
-                    settings.siteName
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "siteName",
-                      value
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="Tagline"
-                description="Short description shown below your brand."
-              >
-                <Input
-                  value={
-                    settings.siteTagline
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "siteTagline",
-                      value
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="Site URL"
-                description="Canonical URL of your AnimeVerse installation."
-              >
-                <Input
-                  value={
-                    settings.siteUrl
-                  }
-                  placeholder="https://example.com"
-                  onChange={(value) =>
-                    setValue(
-                      "siteUrl",
-                      value
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="Language"
-                description="Default interface language."
-              >
-                <Select
-                  value={
-                    settings.language
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "language",
-                      value
-                    )
-                  }
-                >
-                  <option value="en">
-                    English
-                  </option>
-
-                  <option value="bn">
-                    বাংলা
-                  </option>
-                </Select>
-              </Field>
-
-              <Field
-                label="Timezone"
-                description="Timezone used by the admin dashboard."
-              >
-                <Select
-                  value={
-                    settings.timezone
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "timezone",
-                      value
-                    )
-                  }
-                >
-                  <option value="Asia/Dhaka">
-                    Asia/Dhaka
-                  </option>
-
-                  <option value="UTC">
-                    UTC
-                  </option>
-
-                  <option value="Asia/Tokyo">
-                    Asia/Tokyo
-                  </option>
-
-                  <option value="America/New_York">
-                    America/New_York
-                  </option>
-
-                  <option value="Europe/London">
-                    Europe/London
-                  </option>
-                </Select>
-              </Field>
-
-              <Field
-                label="Site Description"
-                description="Default description used across the site."
-              >
-                <textarea
-                  className="admin-textarea"
-                  rows={4}
-                  value={
-                    settings.siteDescription
-                  }
-                  onChange={(e) =>
-                    setValue(
-                      "siteDescription",
-                      e.target.value
-                    )
-                  }
-                />
-              </Field>
-
+              <p>
+                Export your local administration data or reset
+                the stored admin state.
+              </p>
             </div>
-          )}
 
-          {/* =================================================
-              APPEARANCE
-          ================================================= */}
-
-          {activeSection ===
-            "appearance" && (
-            <div className="settings-card">
-
-              <SectionHeader
-                title="Appearance"
-                description="Control the visual appearance and interaction style."
-                icon={Palette}
-              />
-
-              <Field
-                label="Theme"
-                description="Default color scheme."
-              >
-                <Select
-                  value={
-                    settings.theme
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "theme",
-                      value
-                    )
-                  }
-                >
-                  <option value="dark">
-                    Dark
-                  </option>
-
-                  <option value="light">
-                    Light
-                  </option>
-
-                  <option value="system">
-                    System
-                  </option>
-                </Select>
-              </Field>
-
-              <Field
-                label="Accent Color"
-                description="Primary accent used by the dashboard."
-              >
-                <div className="color-control">
-                  <input
-                    type="color"
-                    value={
-                      settings.accentColor
-                    }
-                    onChange={(e) =>
-                      setValue(
-                        "accentColor",
-                        e.target.value
-                      )
-                    }
-                  />
-
-                  <Input
-                    value={
-                      settings.accentColor
-                    }
-                    onChange={(value) =>
-                      setValue(
-                        "accentColor",
-                        value
-                      )
-                    }
-                  />
-                </div>
-              </Field>
-
-              <Toggle
-                label="Animations"
-                description="Enable smooth UI transitions and animations."
-                checked={
-                  settings.animations
-                }
-                onChange={(value) =>
-                  setValue(
-                    "animations",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Compact Mode"
-                description="Reduce spacing for dense admin layouts."
-                checked={
-                  settings.compactMode
-                }
-                onChange={(value) =>
-                  setValue(
-                    "compactMode",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Rounded Cards"
-                description="Use rounded corners throughout the interface."
-                checked={
-                  settings.roundedCards
-                }
-                onChange={(value) =>
-                  setValue(
-                    "roundedCards",
-                    value
-                  )
-                }
-              />
-
+            <div className="av-settings-icon">
+              <Download size={20} />
             </div>
-          )}
+          </div>
 
-          {/* =================================================
-              HOMEPAGE
-          ================================================= */}
+          <div className="av-tools-grid">
 
-          {activeSection ===
-            "homepage" && (
-            <div className="settings-card">
+            <div className="av-tool-card">
+              <div className="av-tool-icon">
+                <Download size={19} />
+              </div>
 
-              <SectionHeader
-                title="Homepage"
-                description="Choose which content sections appear on the homepage."
-                icon={Home}
-              />
+              <div className="av-tool-info">
+                <strong>Export Administration Data</strong>
 
-              <Toggle
-                label="Hero Section"
-                description="Show the main featured anime banner."
-                checked={
-                  settings.showHero
-                }
-                onChange={(value) =>
-                  setValue(
-                    "showHero",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Trending Anime"
-                description="Display currently trending anime."
-                checked={
-                  settings.showTrending
-                }
-                onChange={(value) =>
-                  setValue(
-                    "showTrending",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Popular Anime"
-                description="Display popular anime."
-                checked={
-                  settings.showPopular
-                }
-                onChange={(value) =>
-                  setValue(
-                    "showPopular",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Seasonal Anime"
-                description="Display the current season."
-                checked={
-                  settings.showSeasonal
-                }
-                onChange={(value) =>
-                  setValue(
-                    "showSeasonal",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Recently Updated"
-                description="Show recently updated titles."
-                checked={
-                  settings.showRecentlyUpdated
-                }
-                onChange={(value) =>
-                  setValue(
-                    "showRecentlyUpdated",
-                    value
-                  )
-                }
-              />
-
-              <Field
-                label="Items Per Page"
-                description="Number of anime cards displayed per page."
-              >
-                <Select
-                  value={
-                    settings.itemsPerPage
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "itemsPerPage",
-                      Number(value)
-                    )
-                  }
-                >
-                  <option value={12}>
-                    12
-                  </option>
-
-                  <option value={24}>
-                    24
-                  </option>
-
-                  <option value={36}>
-                    36
-                  </option>
-
-                  <option value={48}>
-                    48
-                  </option>
-                </Select>
-              </Field>
-
-            </div>
-          )}
-
-          {/* =================================================
-              API
-          ================================================= */}
-
-          {activeSection ===
-            "api" && (
-            <div className="settings-card">
-
-              <SectionHeader
-                title="API & Data"
-                description="Manage anime data providers, caching and API resilience."
-                icon={Database}
-              />
-
-              <div className="api-priority-box">
-
-                <div>
-                  <span className="status-dot online" />
-
-                  <strong>
-                    Primary API
-                  </strong>
-
-                  <small>
-                    AniList GraphQL
-                  </small>
-                </div>
-
-                <span className="priority-badge">
-                  PRIMARY
+                <span>
+                  Download a JSON backup containing your current
+                  AnimeVerse administration data.
                 </span>
-
               </div>
 
-              <Field
-                label="Primary Anime API"
-                description="Main source for anime metadata."
+              <button
+                type="button"
+                className="av-secondary-button"
+                onClick={download}
               >
-                <Select
-                  value={
-                    settings.primaryAnimeApi
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "primaryAnimeApi",
-                      value
-                    )
-                  }
-                >
-                  <option value="anilist">
-                    AniList
-                  </option>
-                </Select>
-              </Field>
-
-              <Field
-                label="Fallback Anime API"
-                description="Used automatically when the primary API fails."
-              >
-                <Select
-                  value={
-                    settings.fallbackAnimeApi
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "fallbackAnimeApi",
-                      value
-                    )
-                  }
-                >
-                  <option value="jikan">
-                    Jikan
-                  </option>
-                </Select>
-              </Field>
-
-              <Field
-                label="Request Timeout"
-                description="Maximum API request time in milliseconds."
-              >
-                <Input
-                  type="number"
-                  value={
-                    settings.apiTimeout
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "apiTimeout",
-                      Number(value)
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="Retry Attempts"
-                description="Number of automatic retries after a failed API request."
-              >
-                <Select
-                  value={
-                    settings.retryAttempts
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "retryAttempts",
-                      Number(value)
-                    )
-                  }
-                >
-                  <option value={0}>
-                    0
-                  </option>
-
-                  <option value={1}>
-                    1
-                  </option>
-
-                  <option value={2}>
-                    2
-                  </option>
-
-                  <option value={3}>
-                    3
-                  </option>
-                </Select>
-              </Field>
-
-              <Toggle
-                label="API Cache"
-                description="Cache API responses to improve speed and reduce requests."
-                checked={
-                  settings.cacheEnabled
-                }
-                onChange={(value) =>
-                  setValue(
-                    "cacheEnabled",
-                    value
-                  )
-                }
-              />
-
-              <Field
-                label="Cache Duration"
-                description="Cache lifetime in minutes."
-              >
-                <Input
-                  type="number"
-                  value={
-                    settings.cacheDuration
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "cacheDuration",
-                      Number(value)
-                    )
-                  }
-                />
-              </Field>
-
+                <Download size={16} />
+                Export JSON
+              </button>
             </div>
-          )}
 
-          {/* =================================================
-              PLAYER
-          ================================================= */}
-
-          {activeSection ===
-            "player" && (
-            <div className="settings-card">
-
-              <SectionHeader
-                title="Video Player"
-                description="Configure playback behavior and user experience."
-                icon={Play}
-              />
-
-              <Toggle
-                label="Autoplay"
-                description="Automatically start playback when possible."
-                checked={
-                  settings.autoplay
-                }
-                onChange={(value) =>
-                  setValue(
-                    "autoplay",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Auto Next Episode"
-                description="Automatically continue to the next episode."
-                checked={
-                  settings.autoNextEpisode
-                }
-                onChange={(value) =>
-                  setValue(
-                    "autoNextEpisode",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Resume Playback"
-                description="Remember the user's last playback position."
-                checked={
-                  settings.resumePlayback
-                }
-                onChange={(value) =>
-                  setValue(
-                    "resumePlayback",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Captions"
-                description="Enable subtitle/caption controls."
-                checked={
-                  settings.captions
-                }
-                onChange={(value) =>
-                  setValue(
-                    "captions",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Theater Mode"
-                description="Allow users to expand the player into theater mode."
-                checked={
-                  settings.theaterMode
-                }
-                onChange={(value) =>
-                  setValue(
-                    "theaterMode",
-                    value
-                  )
-                }
-              />
-
-              <Field
-                label="Default Quality"
-                description="Initial video quality selection."
-              >
-                <Select
-                  value={
-                    settings.defaultQuality
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "defaultQuality",
-                      value
-                    )
-                  }
-                >
-                  <option value="auto">
-                    Auto
-                  </option>
-
-                  <option value="1080p">
-                    1080p
-                  </option>
-
-                  <option value="720p">
-                    720p
-                  </option>
-
-                  <option value="480p">
-                    480p
-                  </option>
-                </Select>
-              </Field>
-
-              <Field
-                label="Default Volume"
-                description="Initial player volume percentage."
-              >
-                <Input
-                  type="number"
-                  value={
-                    settings.defaultVolume
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "defaultVolume",
-                      Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          Number(value)
-                        )
-                      )
-                    )
-                  }
-                />
-              </Field>
-
-            </div>
-          )}
-
-          {/* =================================================
-              USERS
-          ================================================= */}
-
-          {activeSection ===
-            "users" && (
-            <div className="settings-card">
-
-              <SectionHeader
-                title="Users & Authentication"
-                description="Control account registration and guest access."
-                icon={Users}
-              />
-
-              <Toggle
-                label="User Registration"
-                description="Allow new users to create accounts."
-                checked={
-                  settings.registration
-                }
-                onChange={(value) =>
-                  setValue(
-                    "registration",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Guest Watching"
-                description="Allow visitors to watch without an account."
-                checked={
-                  settings.guestWatching
-                }
-                onChange={(value) =>
-                  setValue(
-                    "guestWatching",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Email Verification"
-                description="Require email verification during registration."
-                checked={
-                  settings.emailVerification
-                }
-                onChange={(value) =>
-                  setValue(
-                    "emailVerification",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Public Profiles"
-                description="Allow users to make their profiles publicly visible."
-                checked={
-                  settings.profilePublic
-                }
-                onChange={(value) =>
-                  setValue(
-                    "profilePublic",
-                    value
-                  )
-                }
-              />
-
-            </div>
-          )}
-
-          {/* =================================================
-              SEO
-          ================================================= */}
-
-          {activeSection ===
-            "seo" && (
-            <div className="settings-card">
-
-              <SectionHeader
-                title="SEO"
-                description="Optimize AnimeVerse for search engines."
-                icon={Search}
-              />
-
-              <Field
-                label="SEO Title"
-                description="Default page title used by search engines."
-              >
-                <Input
-                  value={
-                    settings.seoTitle
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "seoTitle",
-                      value
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="SEO Description"
-                description="Default meta description."
-              >
-                <textarea
-                  className="admin-textarea"
-                  rows={4}
-                  value={
-                    settings.seoDescription
-                  }
-                  onChange={(e) =>
-                    setValue(
-                      "seoDescription",
-                      e.target.value
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="SEO Keywords"
-                description="Comma-separated keywords."
-              >
-                <textarea
-                  className="admin-textarea"
-                  rows={3}
-                  value={
-                    settings.seoKeywords
-                  }
-                  onChange={(e) =>
-                    setValue(
-                      "seoKeywords",
-                      e.target.value
-                    )
-                  }
-                />
-              </Field>
-
-            </div>
-          )}
-
-          {/* =================================================
-              SECURITY
-          ================================================= */}
-
-          {activeSection ===
-            "security" && (
-            <div className="settings-card">
-
-              <SectionHeader
-                title="Security"
-                description="Protect administrator and user sessions."
-                icon={Shield}
-              />
-
-              <Field
-                label="Session Duration"
-                description="Number of days before a session expires."
-              >
-                <Input
-                  type="number"
-                  value={
-                    settings.sessionDuration
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "sessionDuration",
-                      Number(value)
-                    )
-                  }
-                />
-              </Field>
-
-              <Field
-                label="Login Attempts"
-                description="Maximum failed login attempts before temporary protection."
-              >
-                <Input
-                  type="number"
-                  value={
-                    settings.loginAttempts
-                  }
-                  onChange={(value) =>
-                    setValue(
-                      "loginAttempts",
-                      Number(value)
-                    )
-                  }
-                />
-              </Field>
-
-              <Toggle
-                label="Admin Two-Factor Authentication"
-                description="Require an additional authentication step for administrators."
-                checked={
-                  settings.adminTwoFactor
-                }
-                onChange={(value) =>
-                  setValue(
-                    "adminTwoFactor",
-                    value
-                  )
-                }
-              />
-
-              <div className="security-warning">
-
-                <AlertTriangle
-                  size={20}
-                />
-
-                <div>
-                  <strong>
-                    Security reminder
-                  </strong>
-
-                  <p>
-                    Never expose admin
-                    credentials or private API
-                    keys in frontend code.
-                  </p>
-                </div>
-
+            <div className="av-tool-card av-danger-tool">
+              <div className="av-tool-icon av-danger-icon">
+                <RotateCcw size={19} />
               </div>
 
-            </div>
-          )}
+              <div className="av-tool-info">
+                <strong>Reset Admin Data</strong>
 
-          {/* =================================================
-              MAINTENANCE
-          ================================================= */}
+                <span>
+                  Remove locally stored administration data and
+                  restore the initial admin state.
+                </span>
+              </div>
 
-          {activeSection ===
-            "maintenance" && (
-            <div className="settings-card">
+              <button
+                type="button"
+                className="av-danger-button"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    "Reset all local admin data? This action cannot be undone."
+                  );
 
-              <SectionHeader
-                title="Maintenance Mode"
-                description="Temporarily restrict the public website while performing maintenance."
-                icon={Wrench}
-              />
-
-              <div
-                className={`maintenance-banner ${
-                  settings.maintenance
-                    ? "danger"
-                    : "safe"
-                `}
+                  if (confirmed) {
+                    reset();
+                  }
+                }}
               >
-                <div className="maintenance-icon">
-                  {settings.maintenance ? (
-                    <AlertTriangle
-                      size={22}
-                    />
-                  ) : (
-                    <CheckCircle2
-                      size={22}
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <strong>
-                    {settings.maintenance
-                      ? "Maintenance mode is ON"
-                      : "Website is operational"}
-                  </strong>
-
-                  <p>
-                    {settings.maintenance
-                      ? "Visitors may see the maintenance page."
-                      : "The public website is currently available."}
-                  </p>
-                </div>
-              </div>
-
-              <Toggle
-                label="Enable Maintenance Mode"
-                description="Take the public site offline temporarily."
-                checked={
-                  settings.maintenance
-                }
-                onChange={(value) =>
-                  setValue(
-                    "maintenance",
-                    value
-                  )
-                }
-              />
-
-              <Field
-                label="Maintenance Message"
-                description="Message shown to visitors during maintenance."
-              >
-                <textarea
-                  className="admin-textarea"
-                  rows={5}
-                  value={
-                    settings.maintenanceMessage
-                  }
-                  onChange={(e) =>
-                    setValue(
-                      "maintenanceMessage",
-                      e.target.value
-                    )
-                  }
-                />
-              </Field>
-
+                <RotateCcw size={16} />
+                Reset Data
+              </button>
             </div>
-          )}
 
-          {/* =================================================
-              SYSTEM
-          ================================================= */}
+          </div>
+        </section>
 
-          {activeSection ===
-            "system" && (
-            <div className="settings-card">
+        {/* STATUS */}
+        <section className="av-settings-status">
+          <div className="av-status-dot" />
 
-              <SectionHeader
-                title="System Health"
-                description="Monitor the configuration and API availability."
-                icon={Activity}
-              />
+          <div>
+            <strong>Settings are stored locally</strong>
+            <span>
+              Changes are applied immediately to the current
+              AnimeVerse administration state.
+            </span>
+          </div>
+        </section>
 
-              <div className="health-grid">
-
-                <div className="health-card">
-                  <div>
-                    <Server
-                      size={20}
-                    />
-
-                    <span>
-                      AniList
-                    </span>
-                  </div>
-
-                  <strong className="health-online">
-                    Primary
-                  </strong>
-                </div>
-
-                <div className="health-card">
-                  <div>
-                    <Zap
-                      size={20}
-                    />
-
-                    <span>
-                      Jikan
-                    </span>
-                  </div>
-
-                  <strong className="health-online">
-                    Fallback
-                  </strong>
-                </div>
-
-                <div className="health-card">
-                  <div>
-                    <Database
-                      size={20}
-                    />
-
-                    <span>
-                      Cache
-                    </span>
-                  </div>
-
-                  <strong>
-                    {settings.cacheEnabled
-                      ? "Enabled"
-                      : "Disabled"}
-                  </strong>
-                </div>
-
-              </div>
-
-              <Toggle
-                label="Analytics"
-                description="Enable application analytics."
-                checked={
-                  settings.analyticsEnabled
-                }
-                onChange={(value) =>
-                  setValue(
-                    "analyticsEnabled",
-                    value
-                  )
-                }
-              />
-
-              <Toggle
-                label="Debug Mode"
-                description="Enable detailed development diagnostics. Keep disabled in production."
-                checked={
-                  settings.debugMode
-                }
-                onChange={(value) =>
-                  setValue(
-                    "debugMode",
-                    value
-                  )
-                }
-              />
-
-              <div className="system-actions">
-
-                <button
-                  type="button"
-                  className="admin-btn secondary"
-                  onClick={() =>
-                    setShowExport(true)
-                  }
-                >
-                  <Download size={17} />
-                  Export Settings
-                </button>
-
-                <label className="admin-btn secondary">
-                  <Upload size={17} />
-                  Import Settings
-
-                  <input
-                    type="file"
-                    accept="application/json,.json"
-                    hidden
-                    onChange={
-                      handleImport
-                    }
-                  />
-                </label>
-
-              </div>
-
-            </div>
-          )}
-
-        </main>
       </div>
 
-      {/* =================================================
-          RESET MODAL
-      ================================================= */}
+      <style>{`
+        .av-settings-page {
+          width: 100%;
+          max-width: 1100px;
+          display: flex;
+          flex-direction: column;
+          gap: 22px;
+          padding-bottom: 60px;
+        }
 
-      {showReset && (
-        <div className="admin-modal-backdrop">
+        .av-settings-card {
+          width: 100%;
+          background: #101014;
+          border: 1px solid rgba(255,255,255,.08);
+          border-radius: 22px;
+          overflow: hidden;
+          box-shadow: 0 18px 50px rgba(0,0,0,.16);
+        }
 
-          <div className="admin-modal">
+        .av-settings-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 24px;
+          padding: 28px 30px;
+          border-bottom: 1px solid rgba(255,255,255,.07);
+        }
 
-            <div className="modal-icon danger">
-              <AlertTriangle
-                size={24}
-              />
-            </div>
+        .av-settings-label {
+          display: block;
+          margin-bottom: 9px;
+          color: #8b5cf6;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: .2em;
+        }
 
-            <h3>
-              Reset all settings?
-            </h3>
+        .av-settings-card-header h2 {
+          margin: 0;
+          color: #fff;
+          font-size: 22px;
+          line-height: 1.25;
+        }
 
-            <p>
-              This will restore all settings
-              to their default AnimeVerse
-              configuration.
-            </p>
+        .av-settings-card-header p {
+          margin: 8px 0 0;
+          color: #92929d;
+          font-size: 14px;
+          line-height: 1.55;
+          max-width: 650px;
+        }
 
-            <div className="modal-actions">
+        .av-settings-icon {
+          width: 44px;
+          height: 44px;
+          flex: 0 0 44px;
+          display: grid;
+          place-items: center;
+          color: #a78bfa;
+          background: rgba(139,92,246,.10);
+          border: 1px solid rgba(139,92,246,.20);
+          border-radius: 13px;
+        }
 
-              <button
-                type="button"
-                className="admin-btn secondary"
-                onClick={() =>
-                  setShowReset(false)
-                }
-              >
-                Cancel
-              </button>
+        .av-settings-list {
+          padding: 0 30px;
+        }
 
-              <button
-                type="button"
-                className="admin-btn danger"
-                onClick={
-                  handleReset
-                }
-              >
-                Reset Settings
-              </button>
+        .av-setting-item {
+          min-height: 88px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 25px;
+          padding: 22px 0;
+          border-bottom: 1px solid rgba(255,255,255,.065);
+        }
 
-            </div>
+        .av-setting-item:last-child {
+          border-bottom: 0;
+        }
 
-          </div>
-        </div>
-      )}
+        .av-setting-content {
+          min-width: 0;
+          flex: 1;
+        }
 
-      {/* =================================================
-          EXPORT MODAL
-      ================================================= */}
+        .av-setting-title-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
 
-      {showExport && (
-        <div className="admin-modal-backdrop">
+        .av-setting-title-row strong {
+          color: #f5f5f7;
+          font-size: 16px;
+          font-weight: 700;
+        }
 
-          <div className="admin-modal">
+        .av-setting-description {
+          display: block;
+          margin-top: 6px;
+          color: #858590;
+          font-size: 13px;
+          line-height: 1.55;
+        }
 
-            <div className="modal-icon">
-              <Download
-                size={24}
-              />
-            </div>
+        .av-setting-status {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: .03em;
+        }
 
-            <h3>
-              Export settings
-            </h3>
+        .av-setting-status-on {
+          color: #c4b5fd;
+          background: rgba(139,92,246,.13);
+          border: 1px solid rgba(139,92,246,.20);
+        }
 
-            <p>
-              A JSON backup of your current
-              AnimeVerse configuration will
-              be downloaded.
-            </p>
+        .av-setting-status-off {
+          color: #777781;
+          background: rgba(255,255,255,.045);
+          border: 1px solid rgba(255,255,255,.07);
+        }
 
-            <div className="modal-actions">
+        .av-switch {
+          appearance: none;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          cursor: pointer;
+          flex: 0 0 auto;
+        }
 
-              <button
-                type="button"
-                className="admin-btn secondary"
-                onClick={() =>
-                  setShowExport(false)
-                }
-              >
-                Cancel
-              </button>
+        .av-switch-track {
+          width: 52px;
+          height: 30px;
+          padding: 3px;
+          display: flex;
+          align-items: center;
+          border-radius: 999px;
+          background: #292930;
+          border: 1px solid rgba(255,255,255,.10);
+          transition: .2s ease;
+        }
 
-              <button
-                type="button"
-                className="admin-btn primary"
-                onClick={
-                  handleExport
-                }
-              >
-                <Download
-                  size={17}
-                />
-                Export
-              </button>
+        .av-switch-thumb {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          background: #8b8b96;
+          box-shadow: 0 2px 8px rgba(0,0,0,.35);
+          transform: translateX(0);
+          transition: .2s ease;
+        }
 
-            </div>
+        .av-switch-on .av-switch-track {
+          background: #7c3aed;
+          border-color: #8b5cf6;
+        }
 
-          </div>
-        </div>
-      )}
+        .av-switch-on .av-switch-thumb {
+          background: #fff;
+          transform: translateX(22px);
+        }
 
-    </div>
+        .av-switch-danger.av-switch-on .av-switch-track {
+          background: #dc2626;
+          border-color: #ef4444;
+        }
+
+        .av-brand-field {
+          padding: 26px 30px 30px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .av-brand-field label {
+          color: #f5f5f7;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .av-brand-field > span {
+          margin-top: 5px;
+          color: #858590;
+          font-size: 13px;
+        }
+
+        .av-brand-field input {
+          width: 100%;
+          height: 48px;
+          margin-top: 16px;
+          padding: 0 15px;
+          box-sizing: border-box;
+          outline: none;
+          color: #fff;
+          background: #0b0b0f;
+          border: 1px solid rgba(255,255,255,.10);
+          border-radius: 12px;
+          font: inherit;
+          transition: .2s ease;
+        }
+
+        .av-brand-field input:focus {
+          border-color: #8b5cf6;
+          box-shadow: 0 0 0 3px rgba(139,92,246,.12);
+        }
+
+        .av-brand-field small {
+          margin-top: 7px;
+          color: #686872;
+          font-size: 11px;
+        }
+
+        .av-tools-grid {
+          padding: 22px 30px 30px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .av-tool-card {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding: 17px;
+          background: #0b0b0f;
+          border: 1px solid rgba(255,255,255,.07);
+          border-radius: 15px;
+        }
+
+        .av-tool-icon {
+          width: 42px;
+          height: 42px;
+          flex: 0 0 42px;
+          display: grid;
+          place-items: center;
+          color: #a78bfa;
+          background: rgba(139,92,246,.10);
+          border-radius: 11px;
+        }
+
+        .av-tool-info {
+          min-width: 0;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .av-tool-info strong {
+          color: #f4f4f5;
+          font-size: 14px;
+        }
+
+        .av-tool-info span {
+          color: #777781;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+
+        .av-secondary-button,
+        .av-danger-button {
+          min-height: 40px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 14px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 700;
+          white-space: nowrap;
+          transition: .2s ease;
+        }
+
+        .av-secondary-button {
+          color: #ddd6fe;
+          background: rgba(139,92,246,.10);
+          border: 1px solid rgba(139,92,246,.22);
+        }
+
+        .av-secondary-button:hover {
+          background: rgba(139,92,246,.17);
+        }
+
+        .av-danger-tool {
+          border-color: rgba(239,68,68,.12);
+        }
+
+        .av-danger-icon {
+          color: #f87171;
+          background: rgba(239,68,68,.08);
+        }
+
+        .av-danger-button {
+          color: #fca5a5;
+          background: rgba(239,68,68,.08);
+          border: 1px solid rgba(239,68,68,.20);
+        }
+
+        .av-danger-button:hover {
+          background: rgba(239,68,68,.14);
+        }
+
+        .av-settings-status {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 18px;
+          background: rgba(34,197,94,.045);
+          border: 1px solid rgba(34,197,94,.10);
+          border-radius: 14px;
+        }
+
+        .av-status-dot {
+          width: 8px;
+          height: 8px;
+          flex: 0 0 8px;
+          border-radius: 50%;
+          background: #22c55e;
+          box-shadow: 0 0 12px rgba(34,197,94,.5);
+        }
+
+        .av-settings-status div:last-child {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+
+        .av-settings-status strong {
+          color: #d1fae5;
+          font-size: 12px;
+        }
+
+        .av-settings-status span {
+          color: #6f7f75;
+          font-size: 11px;
+        }
+
+        @media (max-width: 700px) {
+          .av-settings-page {
+            gap: 14px;
+            padding-bottom: 35px;
+          }
+
+          .av-settings-card {
+            border-radius: 17px;
+          }
+
+          .av-settings-card-header {
+            padding: 21px 18px;
+          }
+
+          .av-settings-card-header h2 {
+            font-size: 19px;
+          }
+
+          .av-settings-card-header p {
+            font-size: 12px;
+          }
+
+          .av-settings-icon {
+            width: 38px;
+            height: 38px;
+            flex-basis: 38px;
+          }
+
+          .av-settings-list {
+            padding: 0 18px;
+          }
+
+          .av-setting-item {
+            min-height: 0;
+            padding: 18px 0;
+            gap: 15px;
+          }
+
+          .av-setting-title-row strong {
+            font-size: 14px;
+          }
+
+          .av-setting-description {
+            font-size: 12px;
+          }
+
+          .av-switch-track {
+            width: 48px;
+            height: 28px;
+          }
+
+          .av-switch-thumb {
+            width: 20px;
+            height: 20px;
+          }
+
+          .av-switch-on .av-switch-thumb {
+            transform: translateX(20px);
+          }
+
+          .av-brand-field {
+            padding: 20px 18px 22px;
+          }
+
+          .av-tools-grid {
+            padding: 18px;
+          }
+
+          .av-tool-card {
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
+          .av-tool-info {
+            width: calc(100% - 57px);
+          }
+
+          .av-secondary-button,
+          .av-danger-button {
+            width: 100%;
+          }
+
+          .av-settings-status {
+            padding: 14px;
+          }
+        }
+      `}</style>
+    </AdminShell>
   );
 }
